@@ -159,10 +159,6 @@ export default function TeacherLogin() {
           </div>
         )}
 
-        <div className="mt-6 text-center">
-          <a href="#/parent" className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>Parent Portal →</a>
-        </div>
-
       </div>
     </div>
   );
