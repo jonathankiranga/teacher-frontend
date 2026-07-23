@@ -89,12 +89,35 @@ export default function TeacherLogin() {
       }} />
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400 }}>
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4" style={{ backgroundColor: '#7B4F9B' }}>
             <span className="text-2xl font-bold text-white">E</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Education APP</h1>
           <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Powered by Smarternow Data Venture</p>
+        </div>
+        <div className="mb-5 px-1 space-y-3 text-center">
+          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.95)' }}>
+            Free digital tools for Kenyan teachers. Track attendance, record CBC assessments, and generate report cards — offline first.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
+              <span style={{ color: '#81C784' }}>✓</span>
+              <span style={{ color: 'rgba(255,255,255,0.85)' }}>Offline attendance</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
+              <span style={{ color: '#81C784' }}>✓</span>
+              <span style={{ color: 'rgba(255,255,255,0.85)' }}>CBC assessments</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
+              <span style={{ color: '#81C784' }}>✓</span>
+              <span style={{ color: 'rgba(255,255,255,0.85)' }}>Report cards</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}>
+              <span style={{ color: '#81C784' }}>✓</span>
+              <span style={{ color: 'rgba(255,255,255,0.85)' }}>Free for schools</span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-card p-6 shadow-xl">
