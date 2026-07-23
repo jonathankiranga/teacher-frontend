@@ -8,9 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.svg', 'offline.html'],
+      strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'service-worker.js',
-      strategies: 'injectManifest',
       manifest: {
         name: 'Education APP — Teacher',
         short_name: 'EduTeacher',
