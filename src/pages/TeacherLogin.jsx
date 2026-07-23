@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import OTPInput from '../components/OTPInput.jsx';
-import MarketplaceBanner from '../components/MarketplaceBanner.jsx';
 import { requestTeacherOtp, verifyTeacherOtp, searchSchools } from '../utils/api.js';
 
 export default function TeacherLogin() {
@@ -164,7 +163,6 @@ export default function TeacherLogin() {
           <a href="#/parent" className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>Parent Portal →</a>
         </div>
 
-        <MarketplaceBanner />
       </div>
     </div>
   );
