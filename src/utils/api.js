@@ -71,6 +71,38 @@ export async function getStudentReport(studentId, term) {
   return data;
 }
 
+// Lesson Plans
+export async function getLessonPlans(params) {
+  const { data } = await api.get('/api/lesson-plans', { params });
+  return data;
+}
+
+export async function getLessonPlan(id) {
+  const { data } = await api.get(`/api/lesson-plans/${id}`);
+  return data;
+}
+
+export async function createLessonPlan(body) {
+  const { data } = await api.post('/api/lesson-plans', body);
+  return data;
+}
+
+export async function updateLessonPlan(id, body) {
+  const { data } = await api.put(`/api/lesson-plans/${id}`, body);
+  return data;
+}
+
+export async function deleteLessonPlan(id) {
+  const { data } = await api.delete(`/api/lesson-plans/${id}`);
+  return data;
+}
+
+// Class Report
+export async function getClassReport(classId, term) {
+  const { data } = await api.get(`/api/assessments/class-report/${classId}/${term}`);
+  return data;
+}
+
 export async function subscribePush(teacherId, subscription) {
   const { data } = await api.post('/api/webpush/subscribe', { teacher_id: teacherId, subscription });
   return data;
@@ -78,6 +110,27 @@ export async function subscribePush(teacherId, subscription) {
 
 export async function unsubscribePush(teacherId) {
   const { data } = await api.post('/api/webpush/unsubscribe', { teacher_id: teacherId });
+  return data;
+}
+
+// Competencies & Values
+export async function getCompetencies() {
+  const { data } = await api.get('/api/competencies');
+  return data;
+}
+
+export async function getStudentCompetencyRatings(studentId, term) {
+  const { data } = await api.get(`/api/competencies/ratings/${studentId}/${term}`);
+  return data;
+}
+
+export async function getClassCompetencyRatings(classId, term) {
+  const { data } = await api.get(`/api/competencies/class-ratings/${classId}/${term}`);
+  return data;
+}
+
+export async function saveCompetencyRatings(ratings) {
+  const { data } = await api.post('/api/competencies/ratings', { ratings });
   return data;
 }
 

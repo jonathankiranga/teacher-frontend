@@ -29,7 +29,7 @@ export default function ReportCardPage() {
   );
 
   return (
-    <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
       <div className="navbar px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="btn-ghost text-sm">← Back</button>
