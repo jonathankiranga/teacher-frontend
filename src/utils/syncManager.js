@@ -1,5 +1,5 @@
-import { getUnsyncedLogs, markSynced, getUnsyncedAssessmentResults, markAssessmentSynced } from './indexedDB.js';
-import { syncAttendance, saveResults } from './api.js';
+import { getUnsyncedLogs, markSynced, getUnsyncedAssessmentResults, markAssessmentSynced, getUnsyncedExamResults, markExamResultsSynced } from './indexedDB.js';
+import { syncAttendance, saveResults, saveExamResults } from './api.js';
 
 let intervalId = null;
 
@@ -40,6 +40,26 @@ export async function pushUnsynced() {
         console.log(`Synced ${group.results.length} assessment results for assessment ${assessmentId}`);
       } catch (e) {
         console.warn(`Assessment sync failed for ${assessmentId}, will retry:`, e.message);
+      }
+    }
+  }
+
+  // Sync exam results
+  const examResults = await getUnsyncedExamResults();
+  if (examResults.length > 0) {
+    const groups = {};
+    for (const r of examResults) {
+      if (!groups[r.session_id]) groups[r.session_id] = { ids: [], results: [] };
+      groups[r.session_id].ids.push(r.id);
+      groups[r.session_id].results.push({ student_id: r.student_id, sub_area_id: r.sub_area_id, score: r.score, out_of: r.out_of });
+    }
+    for (const [sessionId, group] of Object.entries(groups)) {
+      try {
+        await saveExamResults(sessionId, group.results, group.results[0]?.entered_by || 'SYSTEM');
+        await markExamResultsSynced(group.ids);
+        console.log(`Synced ${group.results.length} exam results for session ${sessionId}`);
+      } catch (e) {
+        console.warn(`Exam results sync failed for session ${sessionId}, will retry:`, e.message);
       }
     }
   }

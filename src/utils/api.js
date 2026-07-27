@@ -71,6 +71,11 @@ export async function getStudentReport(studentId, term) {
   return data;
 }
 
+export async function getCumulativeReport(studentId, year) {
+  const { data } = await api.get(`/api/assessments/report/${studentId}/cumulative/${year}`);
+  return data;
+}
+
 // Lesson Plans
 export async function getLessonPlans(params) {
   const { data } = await api.get('/api/lesson-plans', { params });
@@ -131,6 +136,33 @@ export async function getClassCompetencyRatings(classId, term) {
 
 export async function saveCompetencyRatings(ratings) {
   const { data } = await api.post('/api/competencies/ratings', { ratings });
+  return data;
+}
+
+// ─── Exam Sessions (CAT) ─────────────────────────────────────────
+
+export async function getExamSessions(params) {
+  const { data } = await api.get('/api/exam-sessions', { params });
+  return data;
+}
+
+export async function getLearningAreasWithSubAreas(schoolId) {
+  const { data } = await api.get('/api/sub-learning-areas', { params: { school_id: schoolId } });
+  return data;
+}
+
+export async function getExamSessionResults(sessionId) {
+  const { data } = await api.get(`/api/exam-sessions/${sessionId}/results`);
+  return data;
+}
+
+export async function saveExamResults(sessionId, results, enteredBy) {
+  const { data } = await api.post(`/api/exam-sessions/${sessionId}/results`, { results, entered_by: enteredBy });
+  return data;
+}
+
+export async function getExamClassReport(sessionId) {
+  const { data } = await api.get(`/api/exam-sessions/${sessionId}/class-report`);
   return data;
 }
 

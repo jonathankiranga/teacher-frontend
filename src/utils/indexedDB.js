@@ -1,5 +1,5 @@
 const DB_NAME = 'sms_offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'attendance';
 
 function openDB() {
@@ -20,6 +20,11 @@ function openDB() {
         const ar = db.createObjectStore('assessment_results', { keyPath: 'id', autoIncrement: true });
         ar.createIndex('synced', 'synced', { unique: false });
         ar.createIndex('assessment_id', 'assessment_id', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('exam_results')) {
+        const er = db.createObjectStore('exam_results', { keyPath: 'id', autoIncrement: true });
+        er.createIndex('synced', 'synced', { unique: false });
+        er.createIndex('session_id', 'session_id', { unique: false });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -136,4 +141,38 @@ export async function getAttendanceByDate(date, teacherId) {
   });
   db.close();
   return all.filter(r => r.teacher_id === teacherId);
+}
+
+// Exam Results offline helpers
+export async function saveExamResultsOffline(sessionId, results) {
+  const db = await openDB();
+  const tx = db.transaction('exam_results', 'readwrite');
+  const store = tx.objectStore('exam_results');
+  for (const r of results) {
+    store.put({ ...r, session_id: sessionId, synced: 0 });
+  }
+  await new Promise(r => { tx.oncomplete = r; });
+  db.close();
+}
+
+export async function getUnsyncedExamResults() {
+  const db = await openDB();
+  const tx = db.transaction('exam_results', 'readonly');
+  const store = tx.objectStore('exam_results');
+  const index = store.index('synced');
+  const rows = await new Promise(r => { const req = index.getAll(0); req.onsuccess = () => r(req.result); });
+  db.close();
+  return rows;
+}
+
+export async function markExamResultsSynced(ids) {
+  const db = await openDB();
+  const tx = db.transaction('exam_results', 'readwrite');
+  const store = tx.objectStore('exam_results');
+  for (const id of ids) {
+    const rec = await new Promise(r => { const req = store.get(id); req.onsuccess = () => r(req.result); });
+    if (rec) { rec.synced = 1; store.put(rec); }
+  }
+  await new Promise(r => { tx.oncomplete = r; });
+  db.close();
 }
