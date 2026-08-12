@@ -26,6 +26,21 @@ export default function AttendancePage() {
     navigate('/teacher/login', { replace: true });
   }
 
+  async function handleCsvExport() {
+    try {
+      const { getAttendanceByDate } = await import('../utils/indexedDB.js');
+      const { downloadCSV } = await import('../utils/csvExport.js');
+      const logs = await getAttendanceByDate(date, teacherId);
+      if (!logs || logs.length === 0) {
+        alert(`No saved attendance records found for ${date}`);
+        return;
+      }
+      downloadCSV(logs, `attendance_${date}.csv`);
+    } catch (e) {
+      alert('Failed to export CSV: ' + e.message);
+    }
+  }
+
   return (
     <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
       <div className="navbar px-4 py-3">
@@ -34,8 +49,9 @@ export default function AttendancePage() {
             <h1 className="text-base font-bold" style={{ color: '#333' }}>Attendance</h1>
             <p className="text-xs" style={{ color: '#999' }}>{date}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <SyncIndicator />
+            <button onClick={handleCsvExport} className="btn-secondary text-xs px-2.5 py-1.5" title="Export CSV Safety Backup">CSV Backup</button>
             <button onClick={handleLogout} className="btn-secondary text-xs px-3 py-1.5">Logout</button>
           </div>
         </div>

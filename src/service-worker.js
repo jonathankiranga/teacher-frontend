@@ -1,8 +1,19 @@
 import { precacheAndRoute } from 'workbox-precaching';
 
-precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(self.__WB_MANIFEST || []);
 
 const SW = self;
+
+// Listen for native Service Worker Background Sync events ('sync-offline-data' or 'sync-attendance')
+SW.addEventListener('sync', event => {
+  if (event.tag === 'sync-offline-data' || event.tag === 'sync-attendance') {
+    event.waitUntil(
+      SW.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'SYNC_OFFLINE_DATA' }));
+      })
+    );
+  }
+});
 
 SW.addEventListener('push', event => {
   const data = event.data?.json() || {};

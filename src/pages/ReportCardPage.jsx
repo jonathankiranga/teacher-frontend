@@ -60,12 +60,24 @@ export default function ReportCardPage() {
     </div>
   );
 
+  async function handleDownloadPdf() {
+    try {
+      const { downloadAcademicPdf } = await import('../utils/pdfExport.js');
+      await downloadAcademicPdf(report, report?.student?.full_name, '', selectedTerm);
+    } catch (e) {
+      alert('Failed to generate PDF: ' + e.message);
+    }
+  }
+
   return (
     <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
       <div className="navbar px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="btn-ghost text-sm">← Back</button>
-          <button onClick={() => window.print()} className="btn-secondary text-sm">Print</button>
+          <div className="flex gap-2">
+            <button onClick={handleDownloadPdf} className="btn-primary text-sm px-3 py-1.5">Download PDF</button>
+            <button onClick={() => window.print()} className="btn-secondary text-sm px-3 py-1.5">Print</button>
+          </div>
         </div>
       </div>
 

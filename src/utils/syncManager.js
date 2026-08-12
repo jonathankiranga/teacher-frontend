@@ -65,12 +65,31 @@ export async function pushUnsynced() {
   }
 }
 
+const safePush = () => pushUnsynced().catch(() => {});
+
+function handleSwMessage(event) {
+  if (event.data?.type === 'SYNC_OFFLINE_DATA') {
+    safePush();
+  }
+}
+
 export function startSync(intervalMs = 300000) {
-  window.addEventListener('online', pushUnsynced);
-  intervalId = setInterval(pushUnsynced, intervalMs);
+  window.addEventListener('online', safePush);
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    if ('SyncManager' in window) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.sync.register('sync-offline-data').catch(() => {});
+      }).catch(() => {});
+    }
+  }
+  intervalId = setInterval(safePush, intervalMs);
 }
 
 export function stopSync() {
-  window.removeEventListener('online', pushUnsynced);
+  window.removeEventListener('online', safePush);
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+  }
   if (intervalId) clearInterval(intervalId);
 }
