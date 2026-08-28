@@ -24,6 +24,7 @@ function AppLayout() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/teacher/attendance" element={<AttendancePage />} />
         <Route path="/exams" element={<ExamsPage />} />
+        <Route path="/exams/report" element={<ReportCardPage />} />
         <Route path="/exams/report/:studentId" element={<ReportCardPage />} />
         <Route path="/exams/report/:studentId/:term" element={<ReportCardPage />} />
         <Route path="/lesson-plans" element={<LessonPlansPage />} />
