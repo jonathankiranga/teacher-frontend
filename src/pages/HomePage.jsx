@@ -9,20 +9,16 @@ const modules = [
   { id: 'lesson-plans', label: 'Lesson Plans', icon: '📖', desc: 'Plan and organize your lessons', color: '#E65100', route: '/lesson-plans' },
   { id: 'class-report', label: 'Class Report', icon: '📑', desc: 'View class performance summaries', color: '#00695C', route: '/class-report' },
   { id: 'competency-ratings', label: 'Competency', icon: '⭐', desc: 'Rate core competencies and values', color: '#7B4F9B', route: '/competency-ratings' },
-  { id: 'staff', label: 'Staff', icon: '👥', desc: 'Manage teachers & bursars', color: '#37474F', route: '/staff' },
   { id: 'help', label: 'Help & Support', icon: '❓', desc: 'Get help and contact support', color: '#6B7280', route: '/help' },
 ];
 
 export default function HomePage() {
   const navigate = useNavigate();
   const teacherId = sessionStorage.getItem('teacher_id');
-  const role = sessionStorage.getItem('role') || 'teacher';
 
   useEffect(() => {
     if (!teacherId) navigate('/teacher/login', { replace: true });
   }, [teacherId, navigate]);
-
-  const visibleModules = role === 'head' ? modules : modules.filter(m => m.id !== 'staff');
 
   function handleLogout() {
     sessionStorage.clear();
@@ -65,7 +61,7 @@ export default function HomePage() {
       <div style={{ maxWidth: 680, margin: '16px auto 0', padding: '0 12px' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 10, paddingLeft: 4 }}>Tools</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {visibleModules.map(m => (
+          {modules.map(m => (
             <button key={m.id} onClick={() => navigate(m.route)}
               style={{
                 display: 'flex',

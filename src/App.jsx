@@ -9,7 +9,6 @@ import HelpPage from './pages/HelpPage.jsx';
 import LessonPlansPage from './pages/LessonPlansPage.jsx';
 import ClassReportPage from './pages/ClassReportPage.jsx';
 import CompetencyRatingsPage from './pages/CompetencyRatingsPage.jsx';
-import StaffPage from './pages/StaffPage.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import BottomNav from './components/BottomNav.jsx';
 
@@ -32,7 +31,6 @@ function AppLayout() {
         <Route path="/class-report/:classId" element={<ClassReportPage />} />
         <Route path="/class-report/:classId/:term" element={<ClassReportPage />} />
         <Route path="/competency-ratings" element={<CompetencyRatingsPage />} />
-        <Route path="/staff" element={<StaffPage />} />
         <Route path="/help" element={<HelpPage />} />
       </Routes>
       {!hideNav && <BottomNav />}
