@@ -6,6 +6,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
+api.interceptors.request.use((config) => {
+  const sessionId = sessionStorage.getItem('session_id');
+  if (sessionId) config.headers.Authorization = `Bearer ${sessionId}`;
+  return config;
+});
+
 export async function requestTeacherOtp(body) {
   const { data } = await api.post('/api/teachers/request-otp', body);
   return data;
