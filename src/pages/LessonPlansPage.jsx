@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { fetchStudents } from '../utils/api.js';
 import { getLearningAreas, getStrands, getSubStrands, getLessonPlans, createLessonPlan, updateLessonPlan, deleteLessonPlan } from '../utils/api.js';
 
+function toDateInput(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value).slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function LessonPlanModal({ plan, schoolId, onClose, onSaved }) {
   const [areas, setAreas] = useState([]);
   const [strands, setStrands] = useState([]);
@@ -14,7 +24,7 @@ function LessonPlanModal({ plan, schoolId, onClose, onSaved }) {
   const [classId, setClassId] = useState(plan?.class_id || '');
   const [weekNumber, setWeekNumber] = useState(plan?.week_number || 1);
   const [term, setTerm] = useState(plan?.term || 'Term 1');
-  const [lessonDate, setLessonDate] = useState(plan?.lesson_date || '');
+  const [lessonDate, setLessonDate] = useState(toDateInput(plan?.lesson_date));
   const [duration, setDuration] = useState(plan?.duration_minutes || 40);
   const [objectives, setObjectives] = useState(plan?.learning_objectives || '');
   const [resources, setResources] = useState(plan?.resources || '');
