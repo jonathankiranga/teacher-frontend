@@ -11,7 +11,8 @@ export default function StudentCard({ student, date, teacherId, initialStatus, o
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(async () => {
-      await saveAttendance(date, [{ student_id: student.student_id, status: newStatus || 'Absent', teacher_id: teacherId }]);
+      const schoolId = sessionStorage.getItem('school_id') || '';
+      await saveAttendance(date, [{ student_id: student.student_id, status: newStatus || 'Absent', teacher_id: teacherId, school_id: schoolId }]);
       if (onStatusChange) onStatusChange(student.student_id, newStatus || 'Absent');
     }, 300);
   }

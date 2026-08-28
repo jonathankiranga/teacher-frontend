@@ -6,21 +6,31 @@ let intervalId = null;
 export async function pushUnsynced() {
   if (!navigator.onLine) return;
 
-  // Sync attendance
+  // Sync attendance — group by date and send the school/teacher/date/records shape the API expects
   const logs = await getUnsyncedLogs();
   if (logs.length > 0) {
-    try {
-      const payload = logs.map(l => ({
-        student_id: l.student_id,
-        date: l.date,
-        status: l.status,
-        teacher_id: l.teacher_id
-      }));
-      await syncAttendance(payload);
-      await markSynced(logs.map(l => l.id));
-      console.log(`Synced ${logs.length} attendance records`);
-    } catch (e) {
-      console.warn('Attendance sync failed, will retry:', e.message);
+    const byDate = {};
+    for (const l of logs) {
+      const d = l.date || l.attendance_date;
+      if (!d) continue;
+      if (!byDate[d]) byDate[d] = { ids: [], records: [], schoolId: l.school_id || sessionStorage.getItem('school_id') || '' };
+      byDate[d].ids.push(l.id);
+      byDate[d].records.push({ student_id: l.student_id, status: l.status, marked_at: l.marked_at || l.created_at || null });
+    }
+    for (const [date, g] of Object.entries(byDate)) {
+      const teacherId = g.records[0] && logs.find(l => l.id === g.ids[0])?.teacher_id;
+      try {
+        await syncAttendance({
+          school_id: g.schoolId,
+          teacher_id: teacherId || sessionStorage.getItem('teacher_id') || '',
+          attendance_date: date,
+          records: g.records
+        });
+        await markSynced(g.ids);
+        console.log(`Synced ${g.records.length} attendance records for ${date}`);
+      } catch (e) {
+        console.warn(`Attendance sync failed for ${date}, will retry:`, e.message);
+      }
     }
   }
 

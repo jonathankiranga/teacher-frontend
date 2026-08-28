@@ -21,8 +21,8 @@ export async function fetchStudents(teacherId) {
   return data;
 }
 
-export async function syncAttendance(records) {
-  const { data } = await api.post('/api/attendance/sync', { records });
+export async function syncAttendance(payload) {
+  const { data } = await api.post('/api/attendance/sync', payload);
   return data;
 }
 
