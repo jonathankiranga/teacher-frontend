@@ -168,7 +168,7 @@ export default function ReportCardPage() {
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold" style={{ color: '#333' }}>CBC Progress Report</h1>
             <p className="text-sm mt-1" style={{ color: '#666' }}>{report.student.full_name} — {report.student.class_name}</p>
-            <p className="text-sm" style={{ color: '#888' }}>{view === 'single' ? report.term : 'Year ' + new Date().getFullYear()}</p>
+            <p className="text-sm" style={{ color: '#888' }}>{view === 'single' ? report.term : 'Year ' + (cumulative?.year || new Date().getFullYear())}</p>
           </div>
 
           {view === 'single' && (
@@ -218,57 +218,62 @@ export default function ReportCardPage() {
 
           {view === 'cumulative' && cumulative ? (
             <>
-              <table className="w-full mb-6">
+              <table className="w-full mb-3">
                 <thead>
                   <tr style={{ backgroundColor: '#FAFAFA' }}>
                     <th className="text-left px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Learning Area</th>
-                    {terms.map(t => (
-                      <th key={t} className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>{t}</th>
+                    {(cumulative.sessions || []).map(s => (
+                      <th key={s.session_id} className="text-center px-2 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', maxWidth: 90 }}>
+                        <div>{s.label}</div>
+                        <div className="text-[10px] font-normal normal-case" style={{ color: '#aaa' }}>{s.term}</div>
+                      </th>
                     ))}
-                    <th className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', backgroundColor: '#F3E8FF' }}>Average</th>
-                    <th className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Level</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cumulative.area_summary.map((a, i) => {
-                    const overallPct = parseFloat(a.overall_avg || 0);
-                    const level = getLevel(overallPct);
-                    const ls = levelStyle(level);
-                    return (
-                      <tr key={a.area_name} style={{ borderBottom: i < cumulative.area_summary.length - 1 ? '1px solid #F0F0F0' : 'none' }}>
-                        <td className="px-3 py-2.5 text-sm font-medium" style={{ color: '#333' }}>{a.area_name}</td>
-                        {terms.map(t => {
-                          const termData = cumulative.terms.find(td => td.term === t);
-                          const areaData = termData?.areas?.find(ad => ad.area_name === a.area_name);
-                          return (
-                            <td key={t} className="px-3 py-2.5 text-sm text-center" style={{ color: areaData?.avg_pct ? '#333' : '#ccc' }}>
-                              {areaData?.avg_pct ? `${areaData.avg_pct}%` : '-'}
-                            </td>
-                          );
-                        })}
-                        <td className="px-3 py-2.5 text-sm text-center font-bold" style={{ color: '#7B4F9B', backgroundColor: '#F8F0FF' }}>
-                          {a.overall_avg ? `${a.overall_avg}%` : '-'}
-                        </td>
-                        <td className="px-3 py-2.5 text-center">
-                          {a.overall_avg ? (
-                            <span className="inline-flex px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>
-                              {level}
-                            </span>
-                          ) : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {(cumulative.areas || []).map((a, i) => (
+                    <tr key={a.area_name} style={{ borderBottom: i < (cumulative.areas || []).length - 1 ? '1px solid #F0F0F0' : 'none' }}>
+                      <td className="px-3 py-2.5 text-sm font-medium" style={{ color: '#333' }}>{a.area_name}</td>
+                      {(cumulative.sessions || []).map(s => {
+                        const pct = a.sessions && a.sessions[s.session_id];
+                        const level = pct ? getLevel(parseFloat(pct)) : null;
+                        const ls = level ? levelStyle(level) : null;
+                        return (
+                          <td key={s.session_id} className="px-2 py-2.5 text-center">
+                            {pct ? (
+                              <div className="text-sm font-bold" style={{ color: '#333' }}>{pct}%</div>
+                            ) : (
+                              <div className="text-sm" style={{ color: '#ccc' }}>-</div>
+                            )}
+                            {ls && (
+                              <div className="mt-0.5">
+                                <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>{level}</span>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  {(cumulative.areas || []).length === 0 && (
+                    <tr><td colSpan={(cumulative.sessions || []).length + 1} className="text-center py-6 text-sm" style={{ color: '#999' }}>No learning area results recorded.</td></tr>
+                  )}
                 </tbody>
               </table>
+
+              {(cumulative.sessions || []).length > 0 && (
+                <p className="text-xs mb-3" style={{ color: '#aaa' }}>
+                  Columns show each CAT/exam session's percentage per learning area for Year {cumulative.year}.
+                </p>
+              )}
 
               <div className="border-t pt-4" style={{ borderColor: '#F0F0F0' }}>
                 <h3 className="text-sm font-semibold mb-2" style={{ color: '#555' }}>Attendance by Term</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  {cumulative.terms.map(td => (
-                    <div key={td.term} className="text-center p-2 rounded" style={{ backgroundColor: '#FAFAFA' }}>
+                  {(cumulative.attendance || []).map(td => (
+                    <div key={td.term} className="text-center">
                       <div className="text-xs font-medium" style={{ color: '#888' }}>{td.term}</div>
-                      <div className="text-sm font-bold" style={{ color: '#333' }}>{td.attendance?.present || 0} / {td.attendance?.total || 0}</div>
+                      <div className="text-sm font-bold" style={{ color: '#333' }}>{td.present || 0} / {td.total || 0}</div>
                     </div>
                   ))}
                 </div>
