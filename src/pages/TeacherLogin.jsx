@@ -31,6 +31,7 @@ export default function TeacherLogin() {
       sessionStorage.setItem('teacher_id', data.teacher_id);
       sessionStorage.setItem('school_id', data.school_id);
       sessionStorage.setItem('role', data.role || 'teacher');
+      sessionStorage.setItem('session_id', data.session_id || '');
       window.location.hash = '#/home';
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid code');

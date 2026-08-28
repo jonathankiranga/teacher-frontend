@@ -139,6 +139,32 @@ export async function saveCompetencyRatings(ratings) {
   return data;
 }
 
+export function getAuthHeader() {
+  const sessionId = sessionStorage.getItem('session_id');
+  return sessionId ? { Authorization: `Bearer ${sessionId}` } : {};
+}
+
+async function schoolHeadRequest(method, url, body) {
+  const { data } = await api.request({ method, url, data: body, headers: getAuthHeader() });
+  return data;
+}
+
+export function getSchoolTeachers(schoolId) {
+  return schoolHeadRequest('get', `/api/school-head/${schoolId}/teachers`);
+}
+
+export function addSchoolTeacher(schoolId, body) {
+  return schoolHeadRequest('post', `/api/school-head/${schoolId}/teachers`, body);
+}
+
+export function setTeacherActive(schoolId, teacherId, active) {
+  return schoolHeadRequest('patch', `/api/school-head/${schoolId}/teachers/${teacherId}`, { active });
+}
+
+export function deleteSchoolTeacher(schoolId, teacherId) {
+  return schoolHeadRequest('delete', `/api/school-head/${schoolId}/teachers/${teacherId}`);
+}
+
 // ─── Exam Sessions (CAT) ─────────────────────────────────────────
 
 export async function getExamSessions(params) {
