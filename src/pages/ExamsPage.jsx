@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { fetchStudents } from '../utils/api.js';
+import api, { fetchStudents, getSchoolClasses } from '../utils/api.js';
 import { getLearningAreas, getExamSessions, getLearningAreasWithSubAreas, getExamSessionResults, saveExamResults } from '../utils/api.js';
 import { saveExamResultsOffline } from '../utils/indexedDB.js';
 
@@ -36,13 +36,17 @@ export default function ExamsPage() {
   useEffect(() => {
     if (!teacherId) { navigate('/teacher/login', { replace: true }); return; }
     fetchStudents(teacherId).then(data => {
-      const list = data.students || [];
-      const classMap = {};
-      list.forEach(s => { if (s.class_id) classMap[s.class_id] = s.class_name || 'Class'; });
-      setClasses(Object.entries(classMap).map(([id, name]) => ({ value: id, label: name })));
-      setStudents(list);
+      setStudents(data.students || []);
     }).catch(() => {});
   }, [teacherId, navigate]);
+
+  // Class dropdown for this school
+  useEffect(() => {
+    if (!schoolId) return;
+    getSchoolClasses(schoolId).then(list => {
+      setClasses(list.map(c => ({ value: c.class_id, label: c.class_name })));
+    }).catch(() => {});
+  }, [schoolId]);
 
   useEffect(() => {
     if (!schoolId || !classId) { setSessions([]); return; }

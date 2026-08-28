@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import StudentCard from './StudentCard.jsx';
 import { getRoster, saveRoster, getAttendanceByDate } from '../utils/indexedDB.js';
-import { fetchStudents } from '../utils/api.js';
+import { fetchStudents, getSchoolClasses } from '../utils/api.js';
 import { downloadCSV } from '../utils/csvExport.js';
 
-export default function StudentList({ teacherId, date }) {
+export default function StudentList({ teacherId, schoolId, date }) {
   const [students, setStudents] = useState([]);
-  const [classId, setClassId] = useState('');
+  const [classId, setClassId] = useState('all');
   const [classes, setClasses] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -27,26 +27,19 @@ export default function StudentList({ teacherId, date }) {
       existing.forEach(r => { map[r.student_id] = r.status; });
       setStatusMap(map);
       setStudents(roster);
-
-      // Build distinct class list from the roster (each student carries class_id).
-      const cMap = {};
-      roster.forEach(s => { if (s.class_id) cMap[s.class_id] = s.class_name || 'Class'; });
-      const list = Object.entries(cMap).map(([id, name]) => ({ id, name }))
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      setClasses(list);
-      if (list.length === 1) {
-        setClassId(list[0].id);
-      } else if (!list.find(c => c.id === classId)) {
-        setClassId('');
-      }
     } catch (e) {
       setError('Failed to load students');
     }
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacherId, date]);
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
+
+  // Class dropdown for this school
+  useEffect(() => {
+    if (!schoolId) { setClasses([]); return; }
+    getSchoolClasses(schoolId).then(setClasses).catch(() => setClasses([]));
+  }, [schoolId]);
 
   useEffect(() => {
     getAttendanceByDate(date, teacherId).then(existing => {
@@ -70,7 +63,9 @@ export default function StudentList({ teacherId, date }) {
     downloadCSV(rows, `attendance-${date}.csv`);
   }
 
-  const filteredStudents = classId ? students.filter(s => String(s.class_id) === String(classId)) : students;
+  const filteredStudents = classId && classId !== 'all'
+    ? students.filter(s => String(s.class_id) === String(classId))
+    : students;
 
   if (loading) {
     return (
@@ -97,21 +92,21 @@ export default function StudentList({ teacherId, date }) {
     );
   }
 
+  const selectedClassName = classId !== 'all' ? classes.find(c => c.class_id === classId)?.class_name : '';
+
   return (
     <div>
-      {classes.length > 1 && (
-        <div className="card p-4 mb-4">
-          <label className="block text-sm font-medium mb-2" style={{ color: '#555' }}>Select Class</label>
-          <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-            <option value="">All classes</option>
-            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-      )}
+      <div className="card p-4 mb-4">
+        <label className="block text-sm font-medium mb-2" style={{ color: '#555' }}>Select Class</label>
+        <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
+          <option value="all">All classes</option>
+          {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
+        </select>
+      </div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-medium" style={{ color: '#666' }}>
           {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
-          {classId ? ` · ${classes.find(c => c.id === classId)?.name || ''}` : ''}
+          {selectedClassName ? ` · ${selectedClassName}` : ''}
         </p>
         <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
       </div>

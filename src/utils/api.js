@@ -31,6 +31,11 @@ export async function searchSchools(query) {
   return data;
 }
 
+export async function getSchoolClasses(schoolId) {
+  const { data } = await api.get('/api/fees/classes', { params: { school_id: schoolId } });
+  return data.classes || [];
+}
+
 export async function getLearningAreas(schoolId, level) {
   const { data } = await api.get('/api/assessments/areas', { params: { school_id: schoolId, level } });
   return data;

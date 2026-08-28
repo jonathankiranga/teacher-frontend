@@ -67,7 +67,7 @@ export default function AttendancePage() {
             className="input-field"
           />
         </div>
-        <StudentList teacherId={teacherId} date={date} />
+        <StudentList teacherId={teacherId} schoolId={schoolId} date={date} />
       </div>
     </div>
   );

@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getStudentReport, getCumulativeReport } from '../utils/api.js';
+import { getStudentReport, getCumulativeReport, fetchStudents, getSchoolClasses } from '../utils/api.js';
 
 export default function ReportCardPage() {
   const navigate = useNavigate();
-  const { studentId, term: urlTerm } = useParams();
+  const { studentId: urlStudentId, term: urlTerm } = useParams();
+  const schoolId = sessionStorage.getItem('school_id');
   const [report, setReport] = useState(null);
   const [cumulative, setCumulative] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('single');
   const [selectedTerm, setSelectedTerm] = useState(urlTerm || 'Term 1');
+
+  // Picker state (when no student is selected)
+  const [classes, setClasses] = useState([]);
+  const [classId, setClassId] = useState('');
+  const [classStudents, setClassStudents] = useState([]);
+  const [students, setStudents] = useState([]);
 
   const terms = ['Term 1', 'Term 2', 'Term 3'];
   const currentTerm = `Term ${Math.ceil((new Date().getMonth() + 1) / 4)}`;
@@ -18,18 +25,32 @@ export default function ReportCardPage() {
     setSelectedTerm(urlTerm || currentTerm);
   }, [urlTerm]);
 
+  // Load school classes for the picker + full roster
   useEffect(() => {
-    if (!studentId) return;
+    if (!schoolId) return;
+    getSchoolClasses(schoolId).then(setClasses).catch(() => {});
+    fetchStudents(sessionStorage.getItem('teacher_id')).then(d => setStudents(d.students || [])).catch(() => {});
+  }, [schoolId]);
+
+  // If a class is selected in picker, filter students to that class
+  useEffect(() => {
+    if (!classId) { setClassStudents([]); return; }
+    const filtered = students.filter(s => String(s.class_id) === String(classId));
+    setClassStudents(filtered);
+  }, [classId, students]);
+
+  useEffect(() => {
+    if (!urlStudentId) { setLoading(false); return; }
     setLoading(true);
     Promise.all([
-      getStudentReport(studentId, selectedTerm),
-      getCumulativeReport(studentId, new Date().getFullYear()).catch(() => null)
+      getStudentReport(urlStudentId, selectedTerm),
+      getCumulativeReport(urlStudentId, new Date().getFullYear()).catch(() => null)
     ]).then(([r, c]) => {
       setReport(r);
       setCumulative(c);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [studentId, selectedTerm]);
+  }, [urlStudentId, selectedTerm]);
 
   function getLevel(pct) {
     if (pct >= 80) return 'EE';
@@ -53,6 +74,51 @@ export default function ReportCardPage() {
       <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#7B4F9B', borderTopColor: 'transparent' }} />
     </div>
   );
+
+  if (!urlStudentId) {
+    return (
+      <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
+        <div className="navbar px-4 py-3">
+          <div className="max-w-3xl mx-auto flex items-center justify-between">
+            <button onClick={() => navigate('/home')} className="btn-ghost text-sm">← Back</button>
+            <h1 className="text-base font-bold" style={{ color: '#333' }}>Student Report Card</h1>
+            <div style={{ width: 60 }} />
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+          <div className="card p-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: '#555' }}>Select Class</label>
+            <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
+              <option value="">— Select Class —</option>
+              {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
+            </select>
+          </div>
+
+          {classId && (
+            <div className="card p-4">
+              <p className="text-sm font-medium mb-3" style={{ color: '#555' }}>
+                Select Student ({classStudents.length})
+              </p>
+              {classStudents.length === 0 ? (
+                <p className="text-sm text-center" style={{ color: '#999' }}>No students in this class.</p>
+              ) : (
+                <div className="space-y-2">
+                  {classStudents.map(s => (
+                    <button key={s.student_id} onClick={() => navigate(`/exams/report/${s.student_id}`)}
+                      className="w-full flex items-center justify-between p-3 rounded-lg text-left"
+                      style={{ backgroundColor: '#FAFAFA', border: '1px solid #EEE' }}>
+                      <span className="text-sm font-medium" style={{ color: '#333' }}>{s.full_name}</span>
+                      <span className="text-xs" style={{ color: '#7B4F9B' }}>View →</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!report) return (
     <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#F8F8F8' }}>
