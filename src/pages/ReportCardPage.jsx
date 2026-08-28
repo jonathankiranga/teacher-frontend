@@ -226,37 +226,60 @@ export default function ReportCardPage() {
                     {hasSummative && (
                       <div className="mt-2">
                         <h4 className="text-xs font-semibold uppercase mb-1 px-1" style={{ color: '#888' }}>Summative (CAT / End-Term)</h4>
-                        <table className="w-full">
-                          <thead>
-                            <tr style={{ backgroundColor: '#FAFAFA' }}>
-                              <th className="text-left px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Assessment</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Sub-area</th>
-                              <th className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Mark</th>
-                              <th className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Level</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {a.summative.map((s, sIdx) => {
-                              const ls = s.performance_level ? levelStyle(s.performance_level) : null;
-                              return (
-                                <tr key={sIdx} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                                  <td className="px-3 py-2 text-sm" style={{ color: '#333' }}>{s.exam_type}{s.exam_name ? ` — ${s.exam_name}` : ''}</td>
-                                  <td className="px-3 py-2 text-sm" style={{ color: '#666' }}>{s.sub_area_name || '-'}</td>
-                                  <td className="px-3 py-2 text-sm text-center" style={{ color: '#666' }}>{s.summative_score || '-'}</td>
-                                  <td className="px-3 py-2 text-center">
-                                    {ls ? (
-                                      <span className="inline-flex px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>
-                                        {s.performance_level}
-                                      </span>
-                                    ) : (
-                                      <span style={{ color: '#ccc' }}>-</span>
-                                    )}
-                                  </td>
+                        {(() => {
+                          const sessions = [];
+                          const sessionKeys = new Set();
+                          const subAreas = [];
+                          const byCell = {};
+                          a.summative.forEach((s) => {
+                            if (!subAreas.includes(s.sub_area_name)) subAreas.push(s.sub_area_name || '-');
+                          });
+                          a.summative.forEach((s) => {
+                            const key = `${s.exam_type}|${s.exam_name || ''}`;
+                            if (!sessionKeys.has(key)) {
+                              sessionKeys.add(key);
+                              sessions.push({ key, label: s.exam_type, name: s.exam_name });
+                            }
+                            byCell[`${s.sub_area_name}|${key}`] = s;
+                          });
+                          return (
+                            <table className="w-full" style={{ minWidth: sessions.length * 90 + 160 }}>
+                              <thead>
+                                <tr style={{ backgroundColor: '#FAFAFA' }}>
+                                  <th className="text-left px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>Sub-area</th>
+                                  {sessions.map((se) => (
+                                    <th key={se.key} className="text-center px-3 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0' }}>
+                                      {se.label}
+                                    </th>
+                                  ))}
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                              </thead>
+                              <tbody>
+                                {subAreas.map((sa, saIdx) => {
+                                  return (
+                                    <tr key={saIdx} style={{ borderBottom: '1px solid #F5F5F5' }}>
+                                      <td className="px-3 py-2 text-sm" style={{ color: '#333' }}>{sa}</td>
+                                      {sessions.map((se) => {
+                                        const s = byCell[`${sa}|${se.key}`];
+                                        const ls = s && s.performance_level ? levelStyle(s.performance_level) : null;
+                                        return (
+                                          <td key={se.key} className="px-3 py-2 text-center">
+                                            <div className="text-sm" style={{ color: s ? '#666' : '#ccc' }}>{s ? s.summative_score : '-'}</div>
+                                            {s && ls && (
+                                              <span className="inline-flex mt-0.5 px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>
+                                                {s.performance_level}
+                                              </span>
+                                            )}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
