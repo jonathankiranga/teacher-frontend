@@ -6,8 +6,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-export async function requestTeacherOtp(phone) {
-  const { data } = await api.post('/api/teachers/request-otp', { phone });
+export async function requestTeacherOtp(body) {
+  const { data } = await api.post('/api/teachers/request-otp', body);
   return data;
 }
 

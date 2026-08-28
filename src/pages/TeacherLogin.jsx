@@ -3,18 +3,22 @@ import OTPInput from '../components/OTPInput.jsx';
 import { requestTeacherOtp, verifyTeacherOtp } from '../utils/api.js';
 
 export default function TeacherLogin() {
-  const [step, setStep] = useState('phone');
-  const [phone, setPhone] = useState('');
+  const [step, setStep] = useState('identifier');
+  const [method, setMethod] = useState('phone');
+  const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState('');
 
   async function handleRequestOtp(e) {
     e.preventDefault();
+    const value = identifier.trim();
+    if (!value) return;
     setLoading(true);
     setError('');
     try {
-      const data = await requestTeacherOtp(phone.trim());
+      const body = method === 'email' ? { email: value } : { phone: value };
+      const data = await requestTeacherOtp(body);
       setSessionId(data.session_id);
       setStep('otp');
     } catch (err) {
@@ -90,10 +94,32 @@ export default function TeacherLogin() {
         </div>
 
         <div className="bg-white rounded-card p-6 shadow-xl">
-          {step === 'phone' && (
+          {step === 'identifier' && (
             <form onSubmit={handleRequestOtp}>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#555' }}>Phone Number</label>
-              <input type="tel" placeholder="e.g. 254712345678" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field mb-4" autoFocus required />
+              <div className="flex gap-2 mb-4">
+                {(['phone', 'email']).map(m => (
+                  <button key={m} type="button" onClick={() => { setMethod(m); setIdentifier(''); }}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold"
+                    style={{
+                      border: method === m ? '2px solid #7B4F9B' : '2px solid #ddd',
+                      backgroundColor: method === m ? '#F3E7FA' : '#fff',
+                      color: method === m ? '#7B4F9B' : '#888',
+                    }}>
+                    {m === 'phone' ? '📱 Phone' : '✉️ Email'}
+                  </button>
+                ))}
+              </div>
+              {method === 'phone' ? (
+                <>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: '#555' }}>Phone Number</label>
+                  <input type="tel" placeholder="e.g. 254712345678" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="input-field mb-4" autoFocus required />
+                </>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: '#555' }}>Email Address</label>
+                  <input type="email" placeholder="teacher@school.com" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="input-field mb-4" autoFocus required />
+                </>
+              )}
               <button type="submit" disabled={loading} className="btn-primary">
                 {loading ? 'Sending...' : 'Continue with OTP'}
               </button>
@@ -102,10 +128,12 @@ export default function TeacherLogin() {
 
           {step === 'otp' && (
             <div>
-              <p className="text-sm mb-1 text-center" style={{ color: '#666' }}>Enter the code sent to</p>
-              <p className="text-base font-semibold mb-5 text-center" style={{ color: '#7B4F9B' }}>{phone}</p>
+              <p className="text-sm mb-1 text-center" style={{ color: '#666' }}>
+                Enter the code sent to your {method === 'email' ? 'email' : 'phone'}
+              </p>
+              <p className="text-base font-semibold mb-5 text-center" style={{ color: '#7B4F9B' }}>{identifier}</p>
               <OTPInput onComplete={handleVerify} />
-              <button onClick={() => { setStep('phone'); setError(''); }} className="w-full mt-3 text-center text-sm" style={{ color: '#888' }}>← Change number</button>
+              <button onClick={() => { setStep('identifier'); setError(''); }} className="w-full mt-3 text-center text-sm" style={{ color: '#888' }}>← Change {method === 'email' ? 'email' : 'number'}</button>
             </div>
           )}
         </div>
