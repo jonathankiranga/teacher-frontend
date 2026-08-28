@@ -1,45 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import OTPInput from '../components/OTPInput.jsx';
-import { requestTeacherOtp, verifyTeacherOtp, searchSchools } from '../utils/api.js';
+import { requestTeacherOtp, verifyTeacherOtp } from '../utils/api.js';
 
 export default function TeacherLogin() {
-  const [step, setStep] = useState('school');
-  const [schoolQuery, setSchoolQuery] = useState('');
-  const [schoolResults, setSchoolResults] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [step, setStep] = useState('phone');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState('');
-  const schoolRef = useRef(null);
-  const debounceRef = useRef(null);
-
-  useEffect(() => {
-    if (schoolQuery.length < 2) { setSchoolResults([]); return; }
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const data = await searchSchools(schoolQuery);
-        setSchoolResults(data.schools || []);
-      } catch { setSchoolResults([]); }
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [schoolQuery]);
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (schoolRef.current && !schoolRef.current.contains(e.target)) setSchoolResults([]);
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
   async function handleRequestOtp(e) {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const data = await requestTeacherOtp(phone);
+      const data = await requestTeacherOtp(phone.trim());
       setSessionId(data.session_id);
       setStep('otp');
     } catch (err) {
@@ -61,13 +36,6 @@ export default function TeacherLogin() {
       setError(err.response?.data?.error || 'Invalid code');
     }
     setLoading(false);
-  }
-
-  function selectSchool(school) {
-    setSelectedSchool(school);
-    setSchoolQuery(school.school_name);
-    setSchoolResults([]);
-    setStep('phone');
   }
 
   return (
@@ -121,45 +89,10 @@ export default function TeacherLogin() {
         </div>
 
         <div className="bg-white rounded-card p-6 shadow-xl">
-          {step === 'school' && (
-            <div ref={schoolRef}>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#555' }}>Search your school</label>
-              <input
-                type="text"
-                placeholder="Type school name..."
-                value={schoolQuery}
-                onChange={(e) => setSchoolQuery(e.target.value)}
-                className="input-field"
-                autoFocus
-              />
-              {schoolResults.length > 0 && (
-                <div className="mt-2 rounded-lg overflow-hidden" style={{ border: '1px solid #E8E8E8', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                  {schoolResults.map(s => (
-                    <button key={s.school_id} onClick={() => selectSchool(s)}
-                      className="w-full px-4 py-3 text-left text-sm transition-colors"
-                      style={{ borderBottom: '1px solid #F0F0F0' }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8F8F8'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}>
-                      <span style={{ color: '#333' }}>{s.school_name}</span>
-                      {s.region && <span className="text-xs ml-2" style={{ color: '#aaa' }}>{s.region}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {schoolQuery.length >= 2 && schoolResults.length === 0 && (
-                <p className="text-xs mt-2" style={{ color: '#888' }}>No schools found</p>
-              )}
-            </div>
-          )}
-
-          {step === 'phone' && selectedSchool && (
+          {step === 'phone' && (
             <form onSubmit={handleRequestOtp}>
-              <p className="text-xs mb-3" style={{ color: '#888' }}>
-                School: <span className="font-semibold" style={{ color: '#7B4F9B' }}>{selectedSchool.school_name}</span>
-                <button type="button" onClick={() => { setStep('school'); setSelectedSchool(null); setSchoolQuery(''); }} className="ml-2 text-xs" style={{ color: '#aaa' }}>Change</button>
-              </p>
               <label className="block text-sm font-medium mb-1.5" style={{ color: '#555' }}>Phone Number</label>
-              <input type="tel" placeholder="e.g. 254712345678" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field mb-4" required />
+              <input type="tel" placeholder="e.g. 254712345678" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field mb-4" autoFocus required />
               <button type="submit" disabled={loading} className="btn-primary">
                 {loading ? 'Sending...' : 'Continue with OTP'}
               </button>
