@@ -5,8 +5,7 @@ import InstallPrompt from '../components/InstallPrompt.jsx';
 
 const modules = [
   { id: 'attendance', label: 'Attendance', icon: '📋', desc: 'Mark and track daily student attendance', color: '#7B4F9B', route: '/teacher/attendance' },
-  { id: 'exams', label: 'Exams', icon: '📝', desc: 'Create assessments and record scores', color: '#2E7D32', route: '/exams' },
-  { id: 'reports', label: 'Reports', icon: '📊', desc: 'Generate student report cards', color: '#D97706', route: '/exams/report' },
+  { id: 'exams', label: 'Exams', icon: '📝', desc: 'Record CAT scores and view student results', color: '#2E7D32', route: '/exams' },
   { id: 'lesson-plans', label: 'Lesson Plans', icon: '📖', desc: 'Plan and organize your lessons', color: '#E65100', route: '/lesson-plans' },
   { id: 'class-report', label: 'Class Report', icon: '📑', desc: 'View class performance summaries', color: '#00695C', route: '/class-report' },
   { id: 'competency-ratings', label: 'Competency', icon: '⭐', desc: 'Rate core competencies and values', color: '#7B4F9B', route: '/competency-ratings' },

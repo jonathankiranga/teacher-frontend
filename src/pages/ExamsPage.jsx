@@ -251,7 +251,17 @@ export default function ExamsPage() {
                       const { subResults, totalScore, totalOutOf, pct, level } = getStudentArea(s.student_id, area.sub_areas);
                       return (
                         <tr key={s.student_id} style={{ borderBottom: si < filteredStudents.length - 1 ? '1px solid #F0F0F0' : 'none' }}>
-                          <td className="px-2 py-2 text-sm sticky left-0 bg-white" style={{ color: '#333', fontWeight: 500 }}>{s.full_name}</td>
+                          <td className="px-2 py-2 text-sm sticky left-0 bg-white" style={{ color: '#333', fontWeight: 500 }}>
+                            <div className="flex items-center justify-between gap-1">
+                              <span>{s.full_name}</span>
+                              <button
+                                onClick={() => navigate(`/exams/report/${s.student_id}`)}
+                                title="View report card"
+                                style={{ fontSize: 10, padding: '2px 6px', borderRadius: 5, border: '1px solid #DDD', backgroundColor: '#FAFAFA', color: '#7B4F9B', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                Report
+                              </button>
+                            </div>
+                          </td>
                           {subResults.map(sr => (
                             <td key={sr.sub_area_id} className="px-1 py-2 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-0.5">
