@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://sms-backend-r0tn.onrender.com';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://sms-backend-r0tn.onrender.com',
+  baseURL: BASE_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' }
 });
@@ -11,6 +13,44 @@ api.interceptors.request.use((config) => {
   if (sessionId) config.headers.Authorization = `Bearer ${sessionId}`;
   return config;
 });
+
+/**
+ * Waits for the Render backend to wake up before proceeding.
+ *
+ * Render free-tier instances spin down after inactivity. The first request
+ * after sleep can take 30–60 seconds. This function polls /health (a fast,
+ * DB-free endpoint) with short retries until it gets { status: 'ok' }, so
+ * callers don't fire real API requests into a cold-starting server and get
+ * spurious network errors or timeouts.
+ *
+ * @param {object} [options]
+ * @param {number} [options.maxWaitMs=90000]  Give up after this many ms total
+ * @param {number} [options.intervalMs=3000]  How long to wait between pings
+ * @param {function} [options.onWaiting]      Called on first failed ping so UI can show a spinner
+ * @returns {Promise<boolean>} true when server is ready, false if maxWaitMs exceeded
+ */
+export async function waitForServer({ maxWaitMs = 90000, intervalMs = 3000, onWaiting } = {}) {
+  const start = Date.now();
+  let notified = false;
+
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await axios.get(`${BASE_URL}/health`, { timeout: 5000 });
+      if (res.data?.status === 'ok') return true;
+    } catch {
+      // Server not up yet — keep polling
+    }
+
+    if (!notified) {
+      notified = true;
+      if (typeof onWaiting === 'function') onWaiting();
+    }
+
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+
+  return false; // timed out
+}
 
 export async function requestTeacherOtp(body) {
   const { data } = await api.post('/api/teachers/request-otp', body);

@@ -1,18 +1,42 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { saveAttendance } from '../utils/indexedDB.js';
 
 export default function StudentCard({ student, date, teacherId, initialStatus, onStatusChange }) {
   const [status, setStatus] = useState(initialStatus || null);
   const timeoutRef = useRef(null);
+  // Track the pending save payload so we can flush it on unmount
+  const pendingRef = useRef(null);
+
+  // Flush any pending save when the component unmounts (e.g. app closed,
+  // page navigated away, or list re-rendered before the 300ms debounce fires).
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        // Fire the save synchronously on cleanup if there's a pending write
+        if (pendingRef.current) {
+          const { date: d, record } = pendingRef.current;
+          saveAttendance(d, [record]).catch(() => {});
+          pendingRef.current = null;
+        }
+      }
+    };
+  }, []);
 
   function handleTap(value) {
     const newStatus = status === value ? null : value;
     setStatus(newStatus);
 
+    const schoolId = sessionStorage.getItem('school_id') || '';
+    const record = { student_id: student.student_id, status: newStatus || 'Absent', teacher_id: teacherId, school_id: schoolId };
+
+    // Store the latest pending write so unmount cleanup can flush it
+    pendingRef.current = { date, record };
+
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(async () => {
-      const schoolId = sessionStorage.getItem('school_id') || '';
-      await saveAttendance(date, [{ student_id: student.student_id, status: newStatus || 'Absent', teacher_id: teacherId, school_id: schoolId }]);
+      pendingRef.current = null; // cleared — save is now in flight
+      await saveAttendance(date, [record]);
       if (onStatusChange) onStatusChange(student.student_id, newStatus || 'Absent');
     }, 300);
   }

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import OTPInput from '../components/OTPInput.jsx';
-import { requestTeacherOtp, verifyTeacherOtp } from '../utils/api.js';
+import { requestTeacherOtp, verifyTeacherOtp, waitForServer } from '../utils/api.js';
 
 export default function TeacherLogin() {
   const [step, setStep] = useState('identifier');
   const [method, setMethod] = useState('phone');
   const [identifier, setIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
+  const [waking, setWaking] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState('');
 
@@ -17,6 +18,14 @@ export default function TeacherLogin() {
     setLoading(true);
     setError('');
     try {
+      // Wait for Render to wake up before sending the OTP request
+      const ready = await waitForServer({ onWaiting: () => setWaking(true) });
+      setWaking(false);
+      if (!ready) {
+        setError('Server is taking too long to respond. Please try again.');
+        setLoading(false);
+        return;
+      }
       const body = method === 'email' ? { email: value } : { phone: value };
       const data = await requestTeacherOtp(body);
       setSessionId(data.session_id);
@@ -121,7 +130,7 @@ export default function TeacherLogin() {
                 </>
               )}
               <button type="submit" disabled={loading} className="btn-primary">
-                {loading ? 'Sending...' : 'Continue with OTP'}
+                {waking ? 'Please wait…' : loading ? 'Sending...' : 'Continue with OTP'}
               </button>
             </form>
           )}

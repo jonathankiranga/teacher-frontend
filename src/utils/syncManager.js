@@ -1,10 +1,18 @@
 import { getUnsyncedLogs, markSynced, getUnsyncedAssessmentResults, markAssessmentSynced, getUnsyncedExamResults, markExamResultsSynced } from './indexedDB.js';
-import { syncAttendance, saveResults, saveExamResults } from './api.js';
+import { syncAttendance, saveResults, saveExamResults, waitForServer } from './api.js';
 
 let intervalId = null;
 
 export async function pushUnsynced() {
   if (!navigator.onLine) return;
+
+  // Render free-tier sleeps after inactivity. Wait for the server to wake
+  // before firing any real sync requests, otherwise they fail into a cold start.
+  const ready = await waitForServer();
+  if (!ready) {
+    console.warn('[syncManager] Server did not become ready in time — sync deferred');
+    return;
+  }
 
   // Sync attendance — group by date and send the school/teacher/date/records shape the API expects
   const logs = await getUnsyncedLogs();

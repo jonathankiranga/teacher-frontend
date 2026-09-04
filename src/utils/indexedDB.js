@@ -1,5 +1,5 @@
 const DB_NAME = 'sms_offline';
-const DB_VERSION = 3;
+const DB_VERSION = 4; // bumped: adds compound index on attendance for upsert
 const STORE_NAME = 'attendance';
 
 function openDB() {
@@ -11,6 +11,14 @@ function openDB() {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
         store.createIndex('synced', 'synced', { unique: false });
         store.createIndex('date', 'date', { unique: false });
+        // Compound index used for upsert lookups
+        store.createIndex('student_date_teacher', ['student_id', 'date', 'teacher_id'], { unique: false });
+      } else if (e.oldVersion < 4) {
+        // Existing store — just add the new compound index if missing
+        const store = e.target.transaction.objectStore(STORE_NAME);
+        if (!store.indexNames.contains('student_date_teacher')) {
+          store.createIndex('student_date_teacher', ['student_id', 'date', 'teacher_id'], { unique: false });
+        }
       }
       if (!db.objectStoreNames.contains('roster')) {
         const roster = db.createObjectStore('roster', { keyPath: 'student_id' });
@@ -92,9 +100,27 @@ export async function saveAttendance(date, records) {
   const db = await openDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
+  const index = store.index('student_date_teacher');
+
   for (const r of records) {
-    store.put({ ...r, date, synced: 0, created_at: new Date().toISOString() });
+    // Look up any existing row for this student+date+teacher so we update
+    // in place rather than inserting a duplicate row on every tap.
+    const existing = await new Promise((resolve) => {
+      const req = index.getAll([r.student_id, date, r.teacher_id]);
+      req.onsuccess = () => resolve(req.result);
+    });
+
+    if (existing && existing.length > 0) {
+      // Update the first matching row; delete any accidental duplicates
+      const [first, ...dupes] = existing;
+      store.put({ ...first, status: r.status, synced: 0, created_at: new Date().toISOString() });
+      dupes.forEach(d => store.delete(d.id));
+    } else {
+      // No existing row — insert fresh
+      store.put({ ...r, date, synced: 0, created_at: new Date().toISOString() });
+    }
   }
+
   await new Promise((r) => { tx.oncomplete = r; });
   db.close();
 }

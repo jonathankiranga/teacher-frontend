@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import StudentCard from './StudentCard.jsx';
 import { getRoster, saveRoster, getAttendanceByDate } from '../utils/indexedDB.js';
-import { fetchStudents, getSchoolClasses } from '../utils/api.js';
+import { fetchStudents, getSchoolClasses, waitForServer } from '../utils/api.js';
 import { downloadCSV } from '../utils/csvExport.js';
 
 export default function StudentList({ teacherId, schoolId, date }) {
@@ -11,22 +11,35 @@ export default function StudentList({ teacherId, schoolId, date }) {
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [waking, setWaking] = useState(false);
 
   const loadRoster = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
+      // Always load from IDB first so offline data shows immediately
       let roster = await getRoster(teacherId);
-      if (roster.length === 0 && navigator.onLine) {
-        const data = await fetchStudents(teacherId);
-        roster = data.students || data;
-        if (roster.length) await saveRoster(roster);
-      }
       const existing = await getAttendanceByDate(date, teacherId);
       const map = {};
       existing.forEach(r => { map[r.student_id] = r.status; });
       setStatusMap(map);
-      setStudents(roster);
+      if (roster.length > 0) setStudents(roster);
+
+      // Fetch a fresh roster from the server if online
+      if (navigator.onLine) {
+        const ready = await waitForServer({
+          onWaiting: () => setWaking(true)
+        });
+        setWaking(false);
+        if (ready) {
+          const data = await fetchStudents(teacherId);
+          roster = data.students || data;
+          if (roster.length) {
+            await saveRoster(roster);
+            setStudents(roster);
+          }
+        }
+      }
     } catch (e) {
       setError('Failed to load students');
     }
@@ -69,8 +82,13 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
         <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#7B4F9B', borderTopColor: 'transparent' }} />
+        {waking && (
+          <p className="text-xs text-center px-4" style={{ color: '#888' }}>
+            Server is starting up, please wait…
+          </p>
+        )}
       </div>
     );
   }
