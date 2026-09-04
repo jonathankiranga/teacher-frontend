@@ -126,7 +126,7 @@ export default function ExamsPage() {
         const score = parseFloat(r.score);
         const outOf = parseFloat(r.out_of);
         if (!isNaN(score) && !isNaN(outOf)) {
-          payload.push({ student_id: studentId, sub_area_id: parseInt(subAreaId), score, out_of });
+          payload.push({ student_id: studentId, sub_area_id: parseInt(subAreaId), score, out_of: outOf });
         }
       }
     }
