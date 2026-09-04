@@ -44,16 +44,22 @@ export default function AttendancePage() {
 
   return (
     <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
-      {/* Compact single-row navbar */}
+      {/* Compact navbar — title left, controls right */}
       <div className="navbar px-3 py-2">
-        <div className="max-w-lg mx-auto flex items-center gap-2">
-          {/* Date picker — takes up space proportionally */}
+        <div className="max-w-lg mx-auto flex items-center gap-3">
+          {/* Page title */}
+          <div style={{ flex: '0 0 auto' }}>
+            <h1 className="text-base font-bold" style={{ color: '#333', lineHeight: 1.2 }}>Attendance</h1>
+            <p className="text-xs" style={{ color: '#999', lineHeight: 1 }}>{date}</p>
+          </div>
+
+          {/* Date picker grows to fill space */}
           <input
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
             style={{
-              flex: '1 1 130px',
+              flex: '1 1 120px',
               padding: '7px 10px',
               borderRadius: 8,
               border: '1.5px solid #E0E0E0',
@@ -65,6 +71,7 @@ export default function AttendancePage() {
               minWidth: 0,
             }}
           />
+
           <SyncIndicator />
           <InstallPrompt />
           <button
@@ -76,7 +83,6 @@ export default function AttendancePage() {
               border: '1.5px solid #E0E0E0', backgroundColor: '#FAFAFA',
               cursor: 'pointer', flexShrink: 0,
             }}>
-            {/* CSV icon */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
