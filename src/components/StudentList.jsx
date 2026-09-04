@@ -49,15 +49,11 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
-  // Class dropdown for this school — auto-select first class on load
+  // Class dropdown for this school
   useEffect(() => {
     if (!schoolId) { setClasses([]); return; }
     getSchoolClasses(schoolId).then(list => {
       setClasses(list);
-      // Auto-select the first class so the teacher never sees all students at once
-      if (list.length > 0 && !classId) {
-        setClassId(String(list[0].class_id));
-      }
     }).catch(() => setClasses([]));
   }, [schoolId]);
 
@@ -123,7 +119,7 @@ export default function StudentList({ teacherId, schoolId, date }) {
     <div>
       <div className="card p-3 mb-3">
         <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-          {classes.length === 0 && <option value="">Loading classes…</option>}
+          <option value="">— Select class —</option>
           {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
         </select>
       </div>
