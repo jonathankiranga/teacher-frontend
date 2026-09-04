@@ -6,7 +6,8 @@ import { downloadCSV } from '../utils/csvExport.js';
 
 export default function StudentList({ teacherId, schoolId, date }) {
   const [students, setStudents] = useState([]);
-  const [classId, setClassId] = useState('all');
+  // Default to first class if available, instead of 'all'
+  const [classId, setClassId] = useState('');
   const [classes, setClasses] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -48,10 +49,16 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
-  // Class dropdown for this school
+  // Class dropdown for this school — auto-select first class on load
   useEffect(() => {
     if (!schoolId) { setClasses([]); return; }
-    getSchoolClasses(schoolId).then(setClasses).catch(() => setClasses([]));
+    getSchoolClasses(schoolId).then(list => {
+      setClasses(list);
+      // Auto-select the first class so the teacher never sees all students at once
+      if (list.length > 0 && !classId) {
+        setClassId(String(list[0].class_id));
+      }
+    }).catch(() => setClasses([]));
   }, [schoolId]);
 
   useEffect(() => {
@@ -76,7 +83,7 @@ export default function StudentList({ teacherId, schoolId, date }) {
     downloadCSV(rows, `attendance-${date}.csv`);
   }
 
-  const filteredStudents = classId && classId !== 'all'
+  const filteredStudents = classId
     ? students.filter(s => String(s.class_id) === String(classId))
     : students;
 
@@ -110,21 +117,20 @@ export default function StudentList({ teacherId, schoolId, date }) {
     );
   }
 
-  const selectedClassName = classId !== 'all' ? classes.find(c => c.class_id === classId)?.class_name : '';
+  const selectedClassName = classes.find(c => String(c.class_id) === String(classId))?.class_name || '';
 
   return (
     <div>
-      <div className="card p-4 mb-4">
-        <label className="block text-sm font-medium mb-2" style={{ color: '#555' }}>Select Class</label>
+      <div className="card p-3 mb-3">
         <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-          <option value="all">All classes</option>
+          {classes.length === 0 && <option value="">Loading classes…</option>}
           {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
         </select>
       </div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium" style={{ color: '#666' }}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold" style={{ color: '#444' }}>
           {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
-          {selectedClassName ? ` · ${selectedClassName}` : ''}
+          {selectedClassName ? <span style={{ fontWeight: 400, color: '#888' }}> · {selectedClassName}</span> : ''}
         </p>
         <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
       </div>

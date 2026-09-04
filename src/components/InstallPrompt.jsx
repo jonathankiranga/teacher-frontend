@@ -1,36 +1,71 @@
 import React, { useEffect, useState } from 'react';
 
+/**
+ * PWA install button — renders as a small download icon in the navbar area.
+ * No blocking banner. Tapping it triggers the native browser install prompt.
+ * Disappears once the app is installed or the prompt is dismissed.
+ */
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [show, setShow] = useState(false);
 
   useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShow(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+
+    // Hide the button if the app is already installed
+    const installed = () => setDeferredPrompt(null);
+    window.addEventListener('appinstalled', installed);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installed);
+    };
   }, []);
 
   async function handleInstall() {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    if (result.outcome === 'accepted') setShow(false);
-    setDeferredPrompt(null);
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') setDeferredPrompt(null);
+    } catch {
+      // ignore — user may have already installed
+    }
   }
 
-  if (!show) return null;
+  if (!deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white p-4 rounded-xl shadow-lg border border-gray-200 z-50">
-      <p className="text-sm mb-2">Install Education APP for offline access</p>
-      <div className="flex gap-3">
-        <button onClick={handleInstall} className="bg-school text-white px-4 py-2 rounded-lg text-sm flex-1">Install</button>
-        <button onClick={() => setShow(false)} className="text-gray-500 px-4 py-2 rounded-lg text-sm">Not now</button>
-      </div>
-    </div>
+    <button
+      onClick={handleInstall}
+      title="Install app for offline use"
+      aria-label="Install app for offline use"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        border: '1.5px solid rgba(255,255,255,0.35)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        cursor: 'pointer',
+        flexShrink: 0,
+        transition: 'background-color 0.15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.25)'; }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; }}
+    >
+      {/* Download arrow SVG — no dependency */}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v13" />
+        <path d="M7 11l5 5 5-5" />
+        <path d="M3 19h18" />
+      </svg>
+    </button>
   );
 }

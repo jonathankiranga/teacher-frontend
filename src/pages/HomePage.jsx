@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PushManager from '../components/PushManager.jsx';
+import InstallPrompt from '../components/InstallPrompt.jsx';
 
 const modules = [
   { id: 'attendance', label: 'Attendance', icon: '📋', desc: 'Mark and track daily student attendance', color: '#7B4F9B', route: '/teacher/attendance' },
@@ -48,12 +49,15 @@ export default function HomePage() {
               <div style={{ fontSize: 12, opacity: 0.8 }}>Welcome back</div>
             </div>
           </div>
-          <button onClick={handleLogout}
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              border: 'none', color: '#fff', padding: '6px 14px',
-              borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}>Logout</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <InstallPrompt />
+            <button onClick={handleLogout}
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                border: 'none', color: '#fff', padding: '6px 14px',
+                borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>Logout</button>
+          </div>
         </div>
       </div>
 

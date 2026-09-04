@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentList from '../components/StudentList.jsx';
 import SyncIndicator from '../components/SyncIndicator.jsx';
+import InstallPrompt from '../components/InstallPrompt.jsx';
 import { startSync, stopSync } from '../utils/syncManager.js';
 
 export default function AttendancePage() {
@@ -43,30 +44,60 @@ export default function AttendancePage() {
 
   return (
     <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
-      <div className="navbar px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold" style={{ color: '#333' }}>Attendance</h1>
-            <p className="text-xs" style={{ color: '#999' }}>{date}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <SyncIndicator />
-            <button onClick={handleCsvExport} className="btn-secondary text-xs px-2.5 py-1.5" title="Export CSV Safety Backup">CSV Backup</button>
-            <button onClick={handleLogout} className="btn-secondary text-xs px-3 py-1.5">Logout</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-lg mx-auto px-4 py-5">
-        <div className="card p-4 mb-5">
-          <label className="block text-sm font-medium mb-2" style={{ color: '#555' }}>Select Date</label>
+      {/* Compact single-row navbar */}
+      <div className="navbar px-3 py-2">
+        <div className="max-w-lg mx-auto flex items-center gap-2">
+          {/* Date picker — takes up space proportionally */}
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="input-field"
+            onChange={e => setDate(e.target.value)}
+            style={{
+              flex: '1 1 130px',
+              padding: '7px 10px',
+              borderRadius: 8,
+              border: '1.5px solid #E0E0E0',
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#333',
+              backgroundColor: '#fff',
+              outline: 'none',
+              minWidth: 0,
+            }}
           />
+          <SyncIndicator />
+          <InstallPrompt />
+          <button
+            onClick={handleCsvExport}
+            title="Export CSV backup"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36, borderRadius: 8,
+              border: '1.5px solid #E0E0E0', backgroundColor: '#FAFAFA',
+              cursor: 'pointer', flexShrink: 0,
+            }}>
+            {/* CSV icon */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+            </svg>
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '7px 12px', borderRadius: 8,
+              border: '1.5px solid #E0E0E0', backgroundColor: '#FAFAFA',
+              fontSize: 12, fontWeight: 600, color: '#666',
+              cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+            }}>
+            Logout
+          </button>
         </div>
+      </div>
+
+      <div className="max-w-lg mx-auto px-3 pt-3">
         <StudentList teacherId={teacherId} schoolId={schoolId} date={date} />
       </div>
     </div>

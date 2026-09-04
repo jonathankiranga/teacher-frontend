@@ -17,7 +17,6 @@ function AppLayout() {
   const hideNav = location.pathname === '/' || location.pathname.includes('/login');
   return (
     <>
-      <InstallPrompt />
       <Routes>
         <Route path="/" element={<Navigate to="/teacher/login" replace />} />
         <Route path="/teacher/login" element={<TeacherLogin />} />

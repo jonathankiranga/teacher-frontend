@@ -62,9 +62,10 @@ export default function StudentCard({ student, date, teacherId, initialStatus, o
           onClick={() => handleTap('Present')}
           className="w-11 h-11 rounded-lg text-lg font-bold transition-all duration-150 flex items-center justify-center"
           style={{
-            backgroundColor: status === 'Present' ? '#2E7D32' : '#F5F5F5',
-            color: status === 'Present' ? '#FFFFFF' : '#999',
-            boxShadow: status === 'Present' ? '0 2px 8px rgba(46,125,50,0.25)' : 'none'
+            backgroundColor: status === 'Present' ? '#2E7D32' : '#fff',
+            color: status === 'Present' ? '#FFFFFF' : '#2E7D32',
+            border: status === 'Present' ? '2px solid #2E7D32' : '2px solid #A5D6A7',
+            boxShadow: status === 'Present' ? '0 2px 8px rgba(46,125,50,0.3)' : 'none',
           }}
         >
           ✓
@@ -73,9 +74,10 @@ export default function StudentCard({ student, date, teacherId, initialStatus, o
           onClick={() => handleTap('Absent')}
           className="w-11 h-11 rounded-lg text-lg font-bold transition-all duration-150 flex items-center justify-center"
           style={{
-            backgroundColor: status === 'Absent' ? '#C62828' : '#F5F5F5',
-            color: status === 'Absent' ? '#FFFFFF' : '#999',
-            boxShadow: status === 'Absent' ? '0 2px 8px rgba(198,40,40,0.25)' : 'none'
+            backgroundColor: status === 'Absent' ? '#C62828' : '#fff',
+            color: status === 'Absent' ? '#FFFFFF' : '#C62828',
+            border: status === 'Absent' ? '2px solid #C62828' : '2px solid #EF9A9A',
+            boxShadow: status === 'Absent' ? '0 2px 8px rgba(198,40,40,0.3)' : 'none',
           }}
         >
           ✕
