@@ -241,7 +241,9 @@ export default function ExamsPage() {
                           {sa.sub_area_name}<br /><span style={{ fontSize: 9, fontWeight: 400 }}>Score / Out of</span>
                         </th>
                       ))}
-                      <th className="text-center px-2 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 70 }}>Total %</th>
+                      <th className="text-center px-2 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 90 }}>
+                        Total<br /><span style={{ fontSize: 9, fontWeight: 400 }}>Score / Level</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -272,10 +274,20 @@ export default function ExamsPage() {
                             </td>
                           ))}
                           <td className="px-2 py-2 text-center font-bold text-sm">
-                            {pct !== null ? (
-                              <span style={{ color: level === 'EE' ? '#2E7D32' : level === 'ME' ? '#1565C0' : level === 'AE' ? '#E65100' : '#C62828' }}>
-                                {pct}%
-                              </span>
+                            {totalOutOf > 0 ? (
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>
+                                  {totalScore}/{totalOutOf}
+                                </div>
+                                {level && (
+                                  <span style={{
+                                    display: 'inline-block', marginTop: 2,
+                                    padding: '1px 7px', borderRadius: 5, fontSize: 11, fontWeight: 700,
+                                    backgroundColor: level === 'EE' ? '#E8F5E9' : level === 'ME' ? '#E3F2FD' : level === 'AE' ? '#FFF3E0' : '#FFEBEE',
+                                    color: level === 'EE' ? '#2E7D32' : level === 'ME' ? '#1565C0' : level === 'AE' ? '#E65100' : '#C62828',
+                                  }}>{level}</span>
+                                )}
+                              </div>
                             ) : '-'}
                           </td>
                         </tr>
