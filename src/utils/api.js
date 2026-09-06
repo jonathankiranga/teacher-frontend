@@ -52,13 +52,13 @@ export async function waitForServer({ maxWaitMs = 90000, intervalMs = 3000, onWa
   return false; // timed out
 }
 
-export async function requestTeacherOtp(body) {
-  const { data } = await api.post('/api/teachers/request-otp', body);
+export async function requestTeacherOtp(phone, email, role = 'teacher') {
+  const { data } = await api.post('/api/teachers/request-otp', { phone, email, role });
   return data;
 }
 
-export async function verifyTeacherOtp(session_id, code) {
-  const { data } = await api.post('/api/teachers/verify-otp', { session_id, code });
+export async function verifyTeacherOtp(session_id, code, role = 'teacher') {
+  const { data } = await api.post('/api/teachers/verify-otp', { session_id, code, role });
   return data;
 }
 

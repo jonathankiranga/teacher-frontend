@@ -28,7 +28,8 @@ export default function TeacherLogin() {
       const isEmail = value.includes('@');
       const data = await requestTeacherOtp(
         isEmail ? undefined : value,
-        isEmail ? value : undefined
+        isEmail ? value : undefined,
+        'teacher'
       );
       setSessionId(data.session_id);
       setStep('otp');
@@ -46,7 +47,7 @@ export default function TeacherLogin() {
     setLoading(true);
     setError('');
     try {
-      const data = await verifyTeacherOtp(sessionId, code);
+      const data = await verifyTeacherOtp(sessionId, code, 'teacher');
       sessionStorage.setItem('teacher_id', data.teacher_id);
       sessionStorage.setItem('school_id', data.school_id);
       sessionStorage.setItem('role', data.role || 'teacher');
