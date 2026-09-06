@@ -316,20 +316,14 @@ export default function ReportCardPage() {
                     <tr key={a.area_name} style={{ borderBottom: i < (cumulative.areas || []).length - 1 ? '1px solid #F0F0F0' : 'none' }}>
                       <td className="px-3 py-2.5 text-sm font-medium" style={{ color: '#333' }}>{a.area_name}</td>
                       {(cumulative.sessions || []).map(s => {
-                        const pct = a.sessions && a.sessions[s.session_id];
-                        const level = pct ? getLevel(parseFloat(pct)) : null;
+                        const level = a.sessions && a.sessions[s.session_id];
                         const ls = level ? levelStyle(level) : null;
                         return (
                           <td key={s.session_id} className="px-2 py-2.5 text-center">
-                            {pct ? (
-                              <div className="text-sm font-bold" style={{ color: '#333' }}>{pct}%</div>
+                            {level && ls ? (
+                              <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>{level}</span>
                             ) : (
                               <div className="text-sm" style={{ color: '#ccc' }}>-</div>
-                            )}
-                            {ls && (
-                              <div className="mt-0.5">
-                                <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: ls.bg, color: ls.text }}>{level}</span>
-                              </div>
                             )}
                           </td>
                         );
@@ -344,7 +338,7 @@ export default function ReportCardPage() {
 
               {(cumulative.sessions || []).length > 0 && (
                 <p className="text-xs mb-3" style={{ color: '#aaa' }}>
-                  Columns show each CAT/exam session's percentage per learning area for Year {cumulative.year}.
+                  Columns show each CAT/exam session's competency level per learning area for Year {cumulative.year}.
                 </p>
               )}
 

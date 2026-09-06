@@ -344,7 +344,7 @@ export default function ClassReportPage() {
                                 return (
                                   <td key={`${area.area_id}-${sess.session_id}`}
                                     style={{ padding: '5px 4px', textAlign: 'center', borderRight: si === sessions.length - 1 ? '2px solid #DDD' : '1px solid #F0F0F0' }}>
-                                    <LevelBadge level={cell?.level} pct={cell?.pct} />
+                                    <LevelBadge level={cell?.level} />
                                   </td>
                                 );
                               })
