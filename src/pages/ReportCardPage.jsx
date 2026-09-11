@@ -217,6 +217,7 @@ export default function ReportCardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', fontSize: 12, padding: '10px 12px', backgroundColor: '#FAFAFA', borderRadius: 8, marginBottom: 16, border: '1px solid #EEE' }}>
                 <div><span style={{ color: '#888' }}>Name: </span><strong>{stu.full_name || '—'}</strong></div>
                 <div><span style={{ color: '#888' }}>Admission No: </span><strong>{stu.admission_number || '—'}</strong></div>
+                <div><span style={{ color: '#888' }}>NEMIS No: </span><strong>{stu.nemis_number || '—'}</strong></div>
                 <div><span style={{ color: '#888' }}>Class: </span><strong>{stu.class_name || '—'}</strong></div>
                 <div><span style={{ color: '#888' }}>Gender: </span><strong>{stu.gender || '—'}</strong></div>
                 <div><span style={{ color: '#888' }}>Date of Birth: </span><strong>{formatDate(stu.date_of_birth)}</strong></div>

@@ -52,7 +52,10 @@ export default function StudentCard({ student, date, teacherId, initialStatus, o
         </div>
         <div className="min-w-0">
           <p className="font-medium text-sm truncate" style={{ color: '#333' }}>{student.full_name}</p>
-          {student.admission_number && (
+          {student.nemis_number && (
+            <p className="text-xs" style={{ color: '#aaa' }}>NEMIS: {student.nemis_number}</p>
+          )}
+          {student.admission_number && !student.nemis_number && (
             <p className="text-xs" style={{ color: '#aaa' }}>{student.admission_number}</p>
           )}
         </div>
