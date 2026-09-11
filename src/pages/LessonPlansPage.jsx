@@ -194,7 +194,7 @@ export default function LessonPlansPage() {
   const schoolId = sessionStorage.getItem('school_id');
   const [plans, setPlans] = useState([]);
   const [filterClass, setFilterClass] = useState('');
-  const [filterTerm, setFilterTerm] = useState('Term 1');
+  const [filterTerm, setFilterTerm] = useState('');
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -254,7 +254,10 @@ export default function LessonPlansPage() {
             {classes.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
           <select value={filterTerm} onChange={e => setFilterTerm(e.target.value)} className="input-field">
-            <option value="Term 1">Term 1</option><option value="Term 2">Term 2</option><option value="Term 3">Term 3</option>
+            <option value="">All Terms</option>
+            <option value="Term 1">Term 1</option>
+            <option value="Term 2">Term 2</option>
+            <option value="Term 3">Term 3</option>
           </select>
         </div>
         {loading ? (

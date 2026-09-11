@@ -187,7 +187,9 @@ export default function ExamsPage() {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: '#555' }}>Year</label>
-            <input type="number" value={year} onChange={e => setYear(e.target.value)} className="input-field text-sm" />
+            <select value={year} onChange={e => setYear(parseInt(e.target.value))} className="input-field text-sm">
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: '#555' }}>CAT Session</label>
