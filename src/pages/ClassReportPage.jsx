@@ -135,74 +135,254 @@ export default function ClassReportPage() {
     setExporting(true);
     try {
       const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF('landscape', 'mm', 'a3');
+
+      // A4 landscape: 297 × 210 mm
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      const PW = 297, PH = 210;
+      const ML = 10, MR = 10, MT = 12; // margins
+      const usableW = PW - ML - MR;    // 277mm
+
       const sessions = report.sessions || [];
-      const areas = report.learning_areas || [];
+      const areas    = report.learning_areas || [];
       const students = report.students || [];
-      const cls = report.class;
+      const cls      = report.class;
 
-      let y = 16;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(`CBC Class Report — ${cls.class_name}`, 14, y); y += 7;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Term: ${report.term}  ·  Year: ${cls.academic_year}  ·  Students: ${students.length}`, 14, y); y += 8;
+      // ── column geometry ──────────────────────────────────────────────────
+      const nameW   = 42;               // student name column
+      const overallW = 12;              // overall column
+      const totalDataCols = areas.length * sessions.length;
+      // remaining space divided equally among area×session cells
+      const cellW = totalDataCols > 0
+        ? Math.max(8, Math.floor((usableW - nameW - overallW) / totalDataCols))
+        : 12;
 
+      // ── colour helpers ───────────────────────────────────────────────────
+      const LEVEL_RGB = {
+        EE: [46,  125, 50],
+        ME: [21,  101, 192],
+        AE: [230, 81,  0],
+        BE: [198, 40,  40],
+      };
+      function setLevelFill(level) {
+        const BG = { EE:[232,245,233], ME:[227,242,253], AE:[255,243,224], BE:[255,235,238] };
+        const c = BG[level] || [245,245,245];
+        doc.setFillColor(c[0], c[1], c[2]);
+      }
+
+      // ── area name abbreviation (max 8 chars) ─────────────────────────────
+      function abbr(name) {
+        if (!name) return '';
+        // Use first letters of each word if > 8 chars, else truncate
+        const words = name.trim().split(/\s+/);
+        if (words.length > 1 && name.length > 8) return words.map(w => w[0]).join('').toUpperCase().slice(0, 6);
+        return name.slice(0, 8);
+      }
+
+      // ── page header ──────────────────────────────────────────────────────
+      function drawPageHeader(doc, y) {
+        doc.setFillColor(123, 79, 155);
+        doc.rect(ML, y, usableW, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`CBC Class Report  —  ${cls.class_name}  ·  ${report.term}  ·  ${cls.academic_year}`, ML + 2, y + 4.8);
+        doc.setTextColor(200, 200, 200);
+        doc.setFontSize(7);
+        doc.text(`Students: ${students.length}  ·  Sessions: ${sessions.length}`, PW - MR - 2, y + 4.8, { align: 'right' });
+        doc.setTextColor(0, 0, 0);
+        return y + 9;
+      }
+
+      // ── two-row table header ──────────────────────────────────────────────
+      function drawTableHeader(doc, y) {
+        const row1H = 7, row2H = 6;
+
+        // Row 1 — area group spans
+        doc.setFillColor(248, 240, 255);
+        doc.rect(ML, y, usableW, row1H, 'F');
+
+        // Student cell (spans 2 rows — draw both rows as one tall rect)
+        doc.setFillColor(240, 233, 248);
+        doc.rect(ML, y, nameW, row1H + row2H, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(80, 80, 80);
+        doc.text('Student', ML + 2, y + (row1H + row2H) / 2 + 2);
+
+        let cx = ML + nameW;
+        for (const area of areas) {
+          const spanW = cellW * sessions.length;
+          doc.setFillColor(248, 240, 255);
+          doc.rect(cx, y, spanW, row1H, 'F');
+          doc.setDrawColor(200, 180, 220);
+          doc.rect(cx, y, spanW, row1H);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6);
+          doc.setTextColor(123, 79, 155);
+          // Centre the area abbreviation
+          doc.text(abbr(area.area_name), cx + spanW / 2, y + 4.5, { align: 'center' });
+          cx += spanW;
+        }
+
+        // Overall span row1
+        doc.setFillColor(240, 233, 248);
+        doc.rect(cx, y, overallW, row1H + row2H, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6);
+        doc.setTextColor(80, 80, 80);
+        doc.text('OVR', cx + overallW / 2, y + (row1H + row2H) / 2 + 2, { align: 'center' });
+
+        // Row 2 — session sub-headers
+        y += row1H;
+        doc.setFillColor(250, 248, 255);
+        doc.rect(ML + nameW, y, usableW - nameW - overallW, row2H, 'F');
+
+        cx = ML + nameW;
+        for (const area of areas) {
+          for (let si = 0; si < sessions.length; si++) {
+            const sess = sessions[si];
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(cx, y, cellW, row2H);
+            doc.setFont('helvetica', si === sessions.length - 1 ? 'bold' : 'normal');
+            doc.setFontSize(5.5);
+            doc.setTextColor(60, 60, 60);
+            doc.text(sess.exam_type.slice(0, 7), cx + cellW / 2, y + 3.8, { align: 'center' });
+            cx += cellW;
+          }
+        }
+
+        // Bottom border of header
+        doc.setDrawColor(150, 100, 180);
+        doc.setLineWidth(0.4);
+        doc.line(ML, y + row2H, ML + usableW, y + row2H);
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(200, 200, 200);
+
+        return y + row2H;
+      }
+
+      // ── draw a student row ────────────────────────────────────────────────
+      const ROW_H = 5.5;
+      function drawStudentRow(doc, st, y, isEven) {
+        // Row background
+        doc.setFillColor(isEven ? 255 : 250, isEven ? 255 : 250, isEven ? 255 : 252);
+        doc.rect(ML, y, usableW, ROW_H, 'F');
+
+        // Name
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(40, 40, 40);
+        const nameStr = st.full_name.length > 26 ? st.full_name.slice(0, 25) + '…' : st.full_name;
+        doc.text(nameStr, ML + 2, y + ROW_H / 2 + 1.8);
+
+        // Data cells
+        let cx = ML + nameW;
+        for (const area of areas) {
+          for (let si = 0; si < sessions.length; si++) {
+            const sess = sessions[si];
+            const cell = st.sessions?.[sess.session_id]?.[area.area_id];
+            const level = cell?.level;
+            if (level) {
+              setLevelFill(level);
+              doc.rect(cx + 0.5, y + 0.8, cellW - 1, ROW_H - 1.6, 'F');
+              const rgb = LEVEL_RGB[level] || [100, 100, 100];
+              doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6);
+              doc.text(level, cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+            } else {
+              doc.setTextColor(180, 180, 180);
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(6);
+              doc.text('—', cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+            }
+            cx += cellW;
+          }
+        }
+
+        // Overall
+        const overall = st.overall_level;
+        if (overall) {
+          setLevelFill(overall);
+          doc.rect(cx + 0.5, y + 0.8, overallW - 1, ROW_H - 1.6, 'F');
+          const rgb = LEVEL_RGB[overall] || [100, 100, 100];
+          doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.5);
+          doc.text(overall, cx + overallW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+        }
+
+        // Row bottom border
+        doc.setDrawColor(230, 230, 230);
+        doc.line(ML, y + ROW_H, ML + usableW, y + ROW_H);
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ── legend ────────────────────────────────────────────────────────────
+      function drawLegend(doc, y) {
+        const items = [['EE','Exceeding'],['ME','Meeting'],['AE','Approaching'],['BE','Below']];
+        doc.setFontSize(6);
+        let lx = ML;
+        for (const [code, label] of items) {
+          const rgb = LEVEL_RGB[code];
+          doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+          doc.rect(lx, y, 3, 3, 'F');
+          doc.setTextColor(80, 80, 80);
+          doc.text(`${code} = ${label}`, lx + 4, y + 2.5);
+          lx += 32;
+        }
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ── footer ────────────────────────────────────────────────────────────
+      function drawFooter(doc, pageNum, totalPages) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.setTextColor(160, 160, 160);
+        doc.text(`Generated by Smarternow Data Venture · Page ${pageNum} of ${totalPages}`, PW / 2, PH - 4, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ── build all pages ───────────────────────────────────────────────────
       if (sessions.length === 0) {
-        doc.text('No exam sessions found for this class / term / year.', 14, y);
+        let y = drawPageHeader(doc, MT);
+        doc.setFontSize(9);
+        doc.text('No exam sessions found for this class / term / year.', ML, y + 10);
+        drawFooter(doc, 1, 1);
         doc.save(`class-report-${cls.class_name}-${report.term}.pdf`);
         setExporting(false);
         return;
       }
 
-      // Build header row: Student | Area × Session columns | Overall
-      const colW = 22;
-      const nameW = 48;
-      let x = 14;
+      // Calculate rows per page
+      const headerH = 7 + 9 + 6; // page header + 2-row table header
+      const legendH = 8;
+      const availableForRows = PH - MT - headerH - legendH - 8; // 8mm bottom margin
+      const rowsPerPage = Math.floor(availableForRows / ROW_H);
 
-      const headerCells = [];
-      headerCells.push({ x, w: nameW, label: 'Student' });
-      x += nameW;
-
-      for (const area of areas) {
-        for (const sess of sessions) {
-          headerCells.push({ x, w: colW, label: `${area.area_name.substring(0, 8)}\n${sess.exam_type}` });
-          x += colW;
-        }
+      // Chunk students into pages
+      const pages = [];
+      for (let i = 0; i < students.length; i += rowsPerPage) {
+        pages.push(students.slice(i, i + rowsPerPage));
       }
-      headerCells.push({ x, w: colW, label: 'Overall' });
+      if (pages.length === 0) pages.push([]);
 
-      // Draw header
-      doc.setFillColor(243, 229, 245);
-      doc.rect(14, y - 4, x + colW - 14, 10, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      for (const cell of headerCells) {
-        const lines = cell.label.split('\n');
-        lines.forEach((line, li) => doc.text(line, cell.x + 1, y + li * 3.5));
-      }
-      y += 10;
-      doc.line(14, y - 2, x + colW, y - 2);
+      pages.forEach((pageStudents, pi) => {
+        if (pi > 0) doc.addPage();
 
-      // Draw rows
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      for (const st of students) {
-        if (y > 190) { doc.addPage(); y = 16; }
-        doc.text(st.full_name.substring(0, 22), 14 + 1, y);
-        let cx = 14 + nameW;
-        for (const area of areas) {
-          for (const sess of sessions) {
-            const cell = st.sessions?.[sess.session_id]?.[area.area_id];
-            doc.text(cell?.level || '—', cx + colW / 2 - 3, y);
-            cx += colW;
-          }
-        }
-        doc.text(st.overall_level || '—', cx + colW / 2 - 3, y);
-        y += 5;
-        doc.line(14, y - 2, x + colW, y - 2);
-      }
+        let y = MT;
+        y = drawPageHeader(doc, y);
+        y = drawTableHeader(doc, y);
+
+        pageStudents.forEach((st, ri) => {
+          drawStudentRow(doc, st, y, ri % 2 === 0);
+          y += ROW_H;
+        });
+
+        // Legend at bottom of each page
+        drawLegend(doc, PH - 12);
+        drawFooter(doc, pi + 1, pages.length);
+      });
 
       doc.save(`class-report-${cls.class_name}-${report.term}-${cls.academic_year}.pdf`);
     } catch (e) {
