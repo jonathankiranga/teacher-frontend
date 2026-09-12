@@ -1,24 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import StudentCard from './StudentCard.jsx';
 import { getRoster, saveRoster, getAttendanceByDate } from '../utils/indexedDB.js';
-import { fetchStudents, getSchoolClasses, waitForServer } from '../utils/api.js';
+import { fetchStudents, waitForServer } from '../utils/api.js';
 import { downloadCSV } from '../utils/csvExport.js';
 
-export default function StudentList({ teacherId, schoolId, date }) {
-  const [students, setStudents] = useState([]);
-  // Default to first class if available, instead of 'all'
-  const [classId, setClassId] = useState(() => localStorage.getItem('preferred_class_id') || '');
-  const [classes, setClasses] = useState([]);
+// Class selection is handled by AttendancePage — StudentList receives classId as a prop.
+export default function StudentList({ teacherId, schoolId, date, classId }) {
+  const [students, setStudents]   = useState([]);
   const [statusMap, setStatusMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [waking, setWaking] = useState(false);
+  const [loading, setLoading]     = useState(true);
+  const [waking, setWaking]       = useState(false);
+  const [error, setError]         = useState('');
 
   const loadRoster = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      // Always load from IDB first so offline data shows immediately
       let roster = await getRoster(teacherId);
       const existing = await getAttendanceByDate(date, teacherId);
       const map = {};
@@ -26,11 +23,8 @@ export default function StudentList({ teacherId, schoolId, date }) {
       setStatusMap(map);
       if (roster.length > 0) setStudents(roster);
 
-      // Fetch a fresh roster from the server if online
       if (navigator.onLine) {
-        const ready = await waitForServer({
-          onWaiting: () => setWaking(true)
-        });
+        const ready = await waitForServer({ onWaiting: () => setWaking(true) });
         setWaking(false);
         if (ready) {
           const data = await fetchStudents(teacherId);
@@ -49,14 +43,6 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
-  // Class dropdown — teacher picks manually, preference saved in localStorage
-  useEffect(() => {
-    if (!schoolId) { setClasses([]); return; }
-    getSchoolClasses(schoolId).then(list => {
-      setClasses(list);
-    }).catch(() => setClasses([]));
-  }, [schoolId]);
-
   useEffect(() => {
     getAttendanceByDate(date, teacherId).then(existing => {
       const map = {};
@@ -65,37 +51,32 @@ export default function StudentList({ teacherId, schoolId, date }) {
     });
   }, [date, teacherId]);
 
-  function handleClassChange(id) {
-    setClassId(id);
-    if (id) localStorage.setItem('preferred_class_id', id);
-  }
-
   function handleStatusChange(studentId, status) {
     setStatusMap(prev => ({ ...prev, [studentId]: status }));
   }
+
+  const filteredStudents = classId
+    ? students.filter(s => String(s.class_id) === String(classId))
+    : [];
 
   function handleExport() {
     const rows = filteredStudents.map(s => ({
       student_id: s.student_id,
       date,
       status: statusMap[s.student_id] || '',
-      teacher_id: teacherId
+      teacher_id: teacherId,
     }));
     downloadCSV(rows, `attendance-${date}.csv`);
   }
 
-  // Always filter by class — never show the full school roster
-  const filteredStudents = classId
-    ? students.filter(s => String(s.class_id) === String(classId))
-    : [];
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#7B4F9B', borderTopColor: 'transparent' }} />
+        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: '#7B4F9B', borderTopColor: 'transparent' }} />
         {waking && (
           <p className="text-xs text-center px-4" style={{ color: '#888' }}>
-            Server is starting up, please wait…
+            Server is starting up, please wait...
           </p>
         )}
       </div>
@@ -119,44 +100,26 @@ export default function StudentList({ teacherId, schoolId, date }) {
     );
   }
 
-  const selectedClassName = classes.find(c => String(c.class_id) === String(classId))?.class_name || '';
-
   return (
     <div>
-      <div className="card p-3 mb-3">
-        <select value={classId} onChange={e => handleClassChange(e.target.value)} className="input-field">
-          <option value="" disabled>Select a class...</option>
-          {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
-        </select>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold" style={{ color: '#444' }}>
+          {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
+        </p>
+        <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
       </div>
-      {!classId ? (
-        <div className="card p-8 text-center">
-          <p className="text-sm font-semibold" style={{ color: '#555' }}>Select a class above to mark attendance</p>
-          <p className="text-xs mt-1" style={{ color: '#aaa' }}>Your selection will be remembered next time</p>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold" style={{ color: '#444' }}>
-              {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
-              {selectedClassName ? <span style={{ fontWeight: 400, color: '#888' }}> · {selectedClassName}</span> : ''}
-            </p>
-            <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
-          </div>
-          <div className="space-y-2">
-            {filteredStudents.map(s => (
-              <StudentCard
-                key={s.student_id}
-                student={s}
-                date={date}
-                teacherId={teacherId}
-                initialStatus={statusMap[s.student_id] || null}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <div className="space-y-2">
+        {filteredStudents.map(s => (
+          <StudentCard
+            key={s.student_id}
+            student={s}
+            date={date}
+            teacherId={teacherId}
+            initialStatus={statusMap[s.student_id] || null}
+            onStatusChange={handleStatusChange}
+          />
+        ))}
+      </div>
     </div>
   );
 }
