@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchStudents } from '../utils/api.js';
-import { getLearningAreas, getStrands, getSubStrands, getLessonPlans, createLessonPlan, updateLessonPlan, deleteLessonPlan } from '../utils/api.js';
+import { getLearningAreas, getLearningAreasByClass, getStrands, getSubStrands, getLessonPlans, createLessonPlan, updateLessonPlan, deleteLessonPlan } from '../utils/api.js';
 
 function toDateInput(value) {
   if (!value) return '';
@@ -37,18 +37,41 @@ function LessonPlanModal({ plan, schoolId, onClose, onSaved }) {
 
   useEffect(() => {
     const teacherId = sessionStorage.getItem('teacher_id');
-    if (schoolId) {
-      getLearningAreas(schoolId, '').then(d => setAreas((d.areas || []).map(a => ({ value: a.area_id, label: a.area_name })))).catch(() => {});
-    }
     if (teacherId) {
+      console.log('[DEBUG LessonPlanModal] Fetching students for teacher:', teacherId);
       fetchStudents(teacherId).then(data => {
+        console.log('[DEBUG LessonPlanModal] Response:', data);
         const list = data.students || [];
         const classMap = {};
         list.forEach(s => { if (s.class_id) classMap[s.class_id] = s.class_name || 'Class'; });
-        setClasses(Object.entries(classMap).map(([id, name]) => ({ value: id, label: name })));
-      }).catch(() => {});
+        const classesResult = Object.entries(classMap).map(([id, name]) => ({ value: id, label: name }));
+        console.log('[DEBUG LessonPlanModal] Classes:', classesResult);
+        setClasses(classesResult);
+      }).catch(err => {
+        console.error('[DEBUG LessonPlanModal] Error:', err);
+      });
     }
   }, [schoolId]);
+
+  // Fetch learning areas when classId changes
+  useEffect(() => {
+    if (!schoolId || !classId) {
+      setAreas([]);
+      return;
+    }
+    console.log('[DEBUG LessonPlanModal] Fetching learning areas for class:', classId);
+    getLearningAreasByClass(schoolId, classId).then(d => {
+      console.log('[DEBUG LessonPlanModal] Areas response:', d);
+      setAreas((d.areas || []).map(a => ({ value: a.area_id, label: a.area_name })));
+      // Reset areaId if it's no longer valid
+      if (areaId && !(d.areas || []).some(a => a.area_id === areaId)) {
+        setAreaId('');
+      }
+    }).catch(err => {
+      console.error('[DEBUG LessonPlanModal] Areas error:', err);
+      setAreas([]);
+    });
+  }, [schoolId, classId]);
 
   useEffect(() => {
     if (areaId) getStrands(areaId, term).then(d => setStrands((d.strands || []).map(s => ({ value: s.strand_id, label: s.strand_name })))).catch(() => {});
@@ -206,12 +229,18 @@ export default function LessonPlansPage() {
 
   useEffect(() => {
     if (!teacherId) return;
+    console.log('[DEBUG LessonPlans] Fetching students for teacher:', teacherId);
     fetchStudents(teacherId).then(data => {
+      console.log('[DEBUG LessonPlans] Response:', data);
       const list = data.students || [];
       const classMap = {};
       list.forEach(s => { if (s.class_id) classMap[s.class_id] = s.class_name || 'Class'; });
-      setClasses(Object.entries(classMap).map(([id, name]) => ({ value: id, label: name })));
-    }).catch(() => {});
+      const classesResult = Object.entries(classMap).map(([id, name]) => ({ value: id, label: name }));
+      console.log('[DEBUG LessonPlans] Classes:', classesResult);
+      setClasses(classesResult);
+    }).catch(err => {
+      console.error('[DEBUG LessonPlans] Error:', err);
+    });
   }, [teacherId]);
 
   async function loadPlans() {
