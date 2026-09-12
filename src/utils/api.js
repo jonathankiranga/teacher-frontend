@@ -206,11 +206,12 @@ export async function getExamSessions(params) {
   return data;
 }
 
-export async function getLearningAreasWithSubAreas(schoolId, classId) {
+export async function getLearningAreasWithSubAreas(schoolId, classId, term) {
   const params = { school_id: schoolId };
   if (classId) params.class_id = classId;
+  if (term) params.term = term;
   console.log('[DEBUG API] getLearningAreasWithSubAreas params:', params);
-  const { data } = await api.get('/api/exam-sessions/sub-learning-areas', { params });
+  const { data } = await api.get('/api/exam-sessions/strand-tree', { params });
   return data;
 }
 

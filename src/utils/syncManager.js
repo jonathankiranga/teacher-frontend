@@ -69,7 +69,7 @@ export async function pushUnsynced() {
     for (const r of examResults) {
       if (!groups[r.session_id]) groups[r.session_id] = { ids: [], results: [] };
       groups[r.session_id].ids.push(r.id);
-      groups[r.session_id].results.push({ student_id: r.student_id, sub_area_id: r.sub_area_id, score: r.score, out_of: r.out_of });
+      groups[r.session_id].results.push({ student_id: r.student_id, sub_strand_id: r.sub_strand_id, score: r.score, out_of: r.out_of });
     }
     for (const [sessionId, group] of Object.entries(groups)) {
       try {

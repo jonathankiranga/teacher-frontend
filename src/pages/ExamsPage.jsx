@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { fetchStudents, getSchoolClasses } from '../utils/api.js';
-import { getLearningAreas, getExamSessions, getLearningAreasWithSubAreas, getExamSessionResults, saveExamResults } from '../utils/api.js';
+import { getExamSessions, getLearningAreasWithSubAreas, getExamSessionResults, saveExamResults } from '../utils/api.js';
 import { saveExamResultsOffline } from '../utils/indexedDB.js';
 
 export default function ExamsPage() {
@@ -55,23 +55,30 @@ export default function ExamsPage() {
       .catch(() => {});
   }, [schoolId, classId, term, year]);
 
-  // Fetch learning areas only when a class is selected — each class has different subjects by grade
+  // Fetch the KICD strand tree only when a class is selected — strands are
+  // scoped to the class grade and filtered to the selected term.
   useEffect(() => {
     if (!schoolId || !classId) { setAreas([]); return; }
-    getLearningAreasWithSubAreas(schoolId, classId).then(d => {
-      const subAreas = d.sub_areas || [];
-      const areaMap = {};
-      subAreas.forEach(sa => {
-        if (!areaMap[sa.area_id]) {
-          areaMap[sa.area_id] = { area_id: sa.area_id, area_name: sa.area_name, sub_areas: [] };
-        }
-        areaMap[sa.area_id].sub_areas.push({
-          sub_area_id: sa.sub_area_id, sub_area_name: sa.sub_area_name, display_order: sa.display_order
-        });
-      });
-      setAreas(Object.values(areaMap).sort((a, b) => a.area_name?.localeCompare(b.area_name)));
+    getLearningAreasWithSubAreas(schoolId, classId, term).then(d => {
+      const areasList = (d.areas || [])
+        .map(a => ({
+          area_id: a.area_id,
+          area_name: a.area_name,
+          strands: (a.strands || []).filter(s => (s.sub_strands || []).length > 0),
+        }))
+        .filter(a => a.strands.length > 0);
+      setAreas(areasList.sort((a, b) => a.area_name?.localeCompare(b.area_name)));
     }).catch(() => {});
-  }, [schoolId, classId]);
+  }, [schoolId, classId, term]);
+
+  // Flatten all sub-strands across every area for the scoring model
+  const allSubStrands = useCallback(() => {
+    const map = [];
+    areas.forEach(a => (a.strands || []).forEach(st => (st.sub_strands || []).forEach(ss => {
+      map.push({ ...ss, area_id: a.area_id, area_name: a.area_name, strand_id: st.strand_id, strand_name: st.strand_name });
+    })));
+    return map;
+  }, [areas]);
 
   useEffect(() => {
     if (!sessionId) { setResults({}); setSession(null); return; }
@@ -81,32 +88,32 @@ export default function ExamsPage() {
       const map = {};
       (d.results || []).forEach(r => {
         if (!map[r.student_id]) map[r.student_id] = {};
-        map[r.student_id][r.sub_area_id] = { score: r.score, out_of: r.out_of, level: r.performance_level };
+        map[r.student_id][r.sub_strand_id] = { score: r.score, out_of: r.out_of, level: r.performance_level };
       });
       setResults(map);
     }).catch(() => {});
   }, [sessionId, sessions]);
 
-  const updateScore = useCallback((studentId, subAreaId, field, value) => {
+  const updateScore = useCallback((studentId, subStrandId, field, value) => {
     setResults(prev => {
       const next = { ...prev };
       if (!next[studentId]) next[studentId] = {};
       next[studentId] = { ...next[studentId] };
-      next[studentId][subAreaId] = { ...next[studentId][subAreaId], [field]: value === '' ? '' : Number(value) };
+      next[studentId][subStrandId] = { ...next[studentId][subStrandId], [field]: value === '' ? '' : Number(value) };
       return next;
     });
   }, []);
 
-  const getStudentArea = (studentId, areaSubAreas) => {
+  const getStudentArea = (studentId, area) => {
     let totalScore = 0, totalOutOf = 0;
-    const subResults = areaSubAreas.map(sa => {
-      const r = results[studentId]?.[sa.sub_area_id] || {};
+    const subResults = (area.strands || []).flatMap(st => (st.sub_strands || []).map(ss => {
+      const r = results[studentId]?.[ss.sub_strand_id] || {};
       const score = parseFloat(r.score);
       const outOf = parseFloat(r.out_of);
       const valid = !isNaN(score) && !isNaN(outOf) && outOf > 0;
       if (valid) { totalScore += score; totalOutOf += outOf; }
-      return { ...sa, score: r.score ?? '', outOf: r.out_of ?? '', valid };
-    });
+      return { ...ss, strand_name: st.strand_name, score: r.score ?? '', outOf: r.out_of ?? '', valid };
+    }));
     const pct = totalOutOf > 0 ? Math.round(totalScore / totalOutOf * 1000) / 10 : null;
     let level = null;
     if (pct !== null) {
@@ -123,11 +130,11 @@ export default function ExamsPage() {
     setMsg('');
     const payload = [];
     for (const studentId of Object.keys(results)) {
-      for (const [subAreaId, r] of Object.entries(results[studentId])) {
+      for (const [subStrandId, r] of Object.entries(results[studentId])) {
         const score = parseFloat(r.score);
         const outOf = parseFloat(r.out_of);
         if (!isNaN(score) && !isNaN(outOf)) {
-          payload.push({ student_id: studentId, sub_area_id: parseInt(subAreaId), score, out_of: outOf });
+          payload.push({ student_id: studentId, sub_strand_id: parseInt(subStrandId), score, out_of: outOf });
         }
       }
     }
@@ -152,6 +159,7 @@ export default function ExamsPage() {
   }
 
   const filteredStudents = students.filter(s => !classId || String(s.class_id) === String(classId));
+  const areaColumnCount = (area) => (area.strands || []).reduce((n, st) => n + (st.sub_strands || []).length, 0);
 
   return (
     <div style={{ backgroundColor: '#F8F8F8', minHeight: '100vh', paddingBottom: 70 }}>
@@ -228,30 +236,40 @@ export default function ExamsPage() {
         )}
 
         {sessionId && classId && areas.map(area => {
-          if (area.sub_areas.length === 0) return null;
+          const colCount = areaColumnCount(area);
+          if (colCount === 0) return null;
           return (
             <div key={area.area_id} className="card overflow-hidden">
               <h3 className="px-4 py-2 font-bold text-sm" style={{ backgroundColor: '#F0F0FF', color: '#1a1a6c', borderBottom: '1px solid #E0E0E0' }}>
                 {area.area_name}
               </h3>
               <div className="overflow-x-auto">
-                <table className="w-full" style={{ minWidth: area.sub_areas.length * 120 + 160 }}>
+                <table className="w-full" style={{ minWidth: colCount * 110 + 160 }}>
                   <thead>
                     <tr style={{ backgroundColor: '#FAFAFA' }}>
-                      <th className="text-left px-2 py-2 text-xs font-semibold uppercase sticky left-0 bg-gray-50 z-10" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 120 }}>Student</th>
-                      {area.sub_areas.map(sa => (
-                        <th key={sa.sub_area_id} className="text-center px-1 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 110 }}>
-                          {sa.sub_area_name}<br /><span style={{ fontSize: 9, fontWeight: 400 }}>Score / Out of</span>
+                      <th className="text-left px-2 py-2 text-xs font-semibold uppercase sticky left-0 bg-gray-50 z-10" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 120 }} rowSpan={2}>Student</th>
+                      {(area.strands || []).map(st => (
+                        <th key={st.strand_id} colSpan={st.sub_strands?.length || 1}
+                            className="text-center px-1 py-2 text-xs font-semibold"
+                            style={{ color: '#7B4F9B', backgroundColor: '#F7F0FB', borderBottom: '1px solid #E0E0E0', minWidth: 110 }}>
+                          {st.strand_name}
                         </th>
                       ))}
-                      <th className="text-center px-2 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 90 }}>
+                      <th className="text-center px-2 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 90 }} rowSpan={2}>
                         Total<br /><span style={{ fontSize: 9, fontWeight: 400 }}>Score / Level</span>
                       </th>
+                    </tr>
+                    <tr style={{ backgroundColor: '#FAFAFA' }}>
+                      {(area.strands || []).flatMap(st => (st.sub_strands || []).map(ss => (
+                        <th key={ss.sub_strand_id} className="text-center px-1 py-2 text-xs font-semibold uppercase" style={{ color: '#888', borderBottom: '1px solid #E0E0E0', minWidth: 110 }}>
+                          {ss.sub_strand_name}<br /><span style={{ fontSize: 9, fontWeight: 400 }}>Score / Out of</span>
+                        </th>
+                      )))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((s, si) => {
-                      const { subResults, totalScore, totalOutOf, pct, level } = getStudentArea(s.student_id, area.sub_areas);
+                      const { subResults, totalScore, totalOutOf, pct, level } = getStudentArea(s.student_id, area);
                       return (
                         <tr key={s.student_id} style={{ borderBottom: si < filteredStudents.length - 1 ? '1px solid #F0F0F0' : 'none' }}>
                           <td className="px-2 py-2 text-sm sticky left-0 bg-white" style={{ color: '#333', fontWeight: 500 }}>
@@ -266,12 +284,12 @@ export default function ExamsPage() {
                             </div>
                           </td>
                           {subResults.map(sr => (
-                            <td key={sr.sub_area_id} className="px-1 py-2 text-center whitespace-nowrap">
+                            <td key={sr.sub_strand_id} className="px-1 py-2 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-0.5">
                                 <input type="number" min="0" step="0.5"
                                   value={sr.score === '' ? '' : sr.score}
                                   disabled={isClosed}
-                                  onChange={e => updateScore(s.student_id, sr.sub_area_id, 'score', e.target.value)}
+                                  onChange={e => updateScore(s.student_id, sr.sub_strand_id, 'score', e.target.value)}
                                   className="w-14 text-center py-1 rounded border text-xs"
                                   style={{ borderColor: '#E0E0E0' }}
                                 />
@@ -279,7 +297,7 @@ export default function ExamsPage() {
                                 <input type="number" min="0" step="0.5"
                                   value={sr.outOf === '' ? '' : sr.outOf}
                                   disabled={isClosed}
-                                  onChange={e => updateScore(s.student_id, sr.sub_area_id, 'out_of', e.target.value)}
+                                  onChange={e => updateScore(s.student_id, sr.sub_strand_id, 'out_of', e.target.value)}
                                   className="w-14 text-center py-1 rounded border text-xs"
                                   style={{ borderColor: '#E0E0E0' }}
                                 />

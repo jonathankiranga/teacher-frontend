@@ -256,7 +256,7 @@ export default function ReportCardPage() {
                           <thead>
                             <tr style={{ backgroundColor: '#F3E8FF' }}>
                               <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid #D0C0E0', color: '#555', fontWeight: 600, minWidth: 120 }}>
-                                Sub-Learning Area
+                                Sub-strand
                               </th>
                               {sessions.map(sess => (
                                 <th key={sess.session_id} style={{ textAlign: 'center', padding: '6px 8px', borderBottom: '1px solid #D0C0E0', color: '#555', fontWeight: 600, minWidth: 80 }}>
@@ -272,13 +272,13 @@ export default function ReportCardPage() {
                             {subAreas.length === 0 ? (
                               <tr>
                                 <td colSpan={sessions.length + 2} style={{ textAlign: 'center', padding: '12px', color: '#bbb', fontStyle: 'italic' }}>
-                                  No sub-areas configured
+                                  No sub-strands configured
                                 </td>
                               </tr>
                             ) : (
                               subAreas.map((sa, idx) => (
-                                <tr key={sa.sub_area_id} style={{ borderBottom: '1px solid #F0EAF8', backgroundColor: idx % 2 === 0 ? '#fff' : '#FDFAFF' }}>
-                                  <td style={{ padding: '6px 8px', color: '#333', fontWeight: 500 }}>{sa.sub_area_name}</td>
+                                <tr key={sa.sub_strand_id} style={{ borderBottom: '1px solid #F0EAF8', backgroundColor: idx % 2 === 0 ? '#fff' : '#FDFAFF' }}>
+                                  <td style={{ padding: '6px 8px', color: '#333', fontWeight: 500 }}>{sa.sub_strand_name}</td>
                                   {sessions.map(sess => {
                                     const r = sa.results && sa.results[sess.session_id];
                                     const ls = r && r.performance_level ? levelStyle(r.performance_level) : null;
