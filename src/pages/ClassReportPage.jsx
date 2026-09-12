@@ -149,12 +149,12 @@ export default function ClassReportPage() {
 
       // ── column geometry ──────────────────────────────────────────────────
       const nameW    = 42;   // student name column
-      const overallW = 10;   // overall column
+      const overallW = 12;   // overall column
       const totalDataCols = areas.length * sessions.length;
-      // colour-only cells — no text needed, so columns can be very narrow
+      // minimum 10mm so 2-letter level codes (EE/ME/AE/BE) are legible
       const cellW = totalDataCols > 0
-        ? Math.max(6, Math.floor((usableW - nameW - overallW) / totalDataCols))
-        : 10;
+        ? Math.max(10, Math.floor((usableW - nameW - overallW) / totalDataCols))
+        : 12;
 
       // ── colour helpers ───────────────────────────────────────────────────
       const LEVEL_RGB = {
@@ -193,15 +193,11 @@ export default function ClassReportPage() {
         return y + 9;
       }
 
-      // ── two-row table header ──────────────────────────────────────────────
+      // ── two-row table header: Row1=Sessions, Row2=Areas ───────────────────
       function drawTableHeader(doc, y) {
         const row1H = 7, row2H = 6;
 
-        // Row 1 — area group spans
-        doc.setFillColor(248, 240, 255);
-        doc.rect(ML, y, usableW, row1H, 'F');
-
-        // Student cell (spans 2 rows — draw both rows as one tall rect)
+        // Student cell spans both rows
         doc.setFillColor(240, 233, 248);
         doc.rect(ML, y, nameW, row1H + row2H, 'F');
         doc.setFont('helvetica', 'bold');
@@ -209,22 +205,22 @@ export default function ClassReportPage() {
         doc.setTextColor(80, 80, 80);
         doc.text('Student', ML + 2, y + (row1H + row2H) / 2 + 2);
 
+        // Row 1 — Session group headers (each spans areas.length columns)
         let cx = ML + nameW;
-        for (const area of areas) {
-          const spanW = cellW * sessions.length;
-          doc.setFillColor(248, 240, 255);
+        for (const sess of sessions) {
+          const spanW = cellW * areas.length;
+          doc.setFillColor(123, 79, 155);
           doc.rect(cx, y, spanW, row1H, 'F');
-          doc.setDrawColor(200, 180, 220);
+          doc.setDrawColor(100, 60, 130);
           doc.rect(cx, y, spanW, row1H);
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(6);
-          doc.setTextColor(123, 79, 155);
-          // Centre the area abbreviation
-          doc.text(abbr(area.area_name), cx + spanW / 2, y + 4.5, { align: 'center' });
+          doc.setFontSize(6.5);
+          doc.setTextColor(255, 255, 255);
+          doc.text(sess.exam_type, cx + spanW / 2, y + 4.8, { align: 'center' });
           cx += spanW;
         }
 
-        // Overall span row1
+        // Overall spans both rows
         doc.setFillColor(240, 233, 248);
         doc.rect(cx, y, overallW, row1H + row2H, 'F');
         doc.setFont('helvetica', 'bold');
@@ -232,26 +228,30 @@ export default function ClassReportPage() {
         doc.setTextColor(80, 80, 80);
         doc.text('OVR', cx + overallW / 2, y + (row1H + row2H) / 2 + 2, { align: 'center' });
 
-        // Row 2 — session sub-headers
+        // Row 2 — Area sub-headers repeated under each session
         y += row1H;
-        doc.setFillColor(250, 248, 255);
-        doc.rect(ML + nameW, y, usableW - nameW - overallW, row2H, 'F');
-
         cx = ML + nameW;
-        for (const area of areas) {
-          for (let si = 0; si < sessions.length; si++) {
-            const sess = sessions[si];
-            doc.setDrawColor(200, 200, 200);
+        for (const sess of sessions) {
+          for (let ai = 0; ai < areas.length; ai++) {
+            const area = areas[ai];
+            const isLast = ai === areas.length - 1;
+            doc.setFillColor(248, 240, 255);
+            doc.rect(cx, y, cellW, row2H, 'F');
+            doc.setDrawColor(isLast ? 100 : 210, isLast ? 60 : 200, isLast ? 130 : 220);
+            doc.setLineWidth(isLast ? 0.4 : 0.2);
             doc.rect(cx, y, cellW, row2H);
-            doc.setFont('helvetica', si === sessions.length - 1 ? 'bold' : 'normal');
+            doc.setFont('helvetica', 'bold');
             doc.setFontSize(5.5);
-            doc.setTextColor(60, 60, 60);
-            doc.text(sess.exam_type.slice(0, 7), cx + cellW / 2, y + 3.8, { align: 'center' });
+            doc.setTextColor(123, 79, 155);
+            doc.text(abbr(area.area_name), cx + cellW / 2, y + 3.8, { align: 'center' });
             cx += cellW;
           }
         }
 
-        // Bottom border of header
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(200, 200, 200);
+
+        // Bottom border
         doc.setDrawColor(150, 100, 180);
         doc.setLineWidth(0.4);
         doc.line(ML, y + row2H, ML + usableW, y + row2H);
@@ -275,18 +275,27 @@ export default function ClassReportPage() {
         const nameStr = st.full_name.length > 26 ? st.full_name.slice(0, 25) + '…' : st.full_name;
         doc.text(nameStr, ML + 2, y + ROW_H / 2 + 1.8);
 
-        // Data cells
+        // Data cells — sessions outer loop, areas inner (matches header layout)
         let cx = ML + nameW;
-        for (const area of areas) {
-          for (let si = 0; si < sessions.length; si++) {
-            const sess = sessions[si];
+        for (const sess of sessions) {
+          for (let ai = 0; ai < areas.length; ai++) {
+            const area = areas[ai];
             const cell = st.sessions?.[sess.session_id]?.[area.area_id];
             const level = cell?.level;
             if (level) {
               setLevelFill(level);
               doc.rect(cx + 0.5, y + 0.5, cellW - 1, ROW_H - 1, 'F');
+              const rgb = LEVEL_RGB[level] || [100, 100, 100];
+              doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6);
+              doc.text(level, cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+            } else {
+              doc.setTextColor(200, 200, 200);
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(6);
+              doc.text('—', cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
             }
-            // No text — colour alone conveys the level
             cx += cellW;
           }
         }
@@ -462,37 +471,36 @@ export default function ClassReportPage() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
                       <thead>
-                        {/* Row 1: Learning area group headers */}
+                        {/* Row 1: Session group headers */}
                         <tr style={{ backgroundColor: '#F8F0FF' }}>
                           <th rowSpan={2} style={{ padding: '8px 12px', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '2px solid #DDD', borderRight: '1px solid #EEE', minWidth: 160, color: '#555', fontWeight: 700, verticalAlign: 'bottom' }}>
                             Student
                           </th>
-                          {areas.map(area => (
-                            <th key={area.area_id} colSpan={sessions.length}
-                              style={{ padding: '6px 8px', textAlign: 'center', borderBottom: '1px solid #DDD', borderRight: '2px solid #DDD', color: '#7B4F9B', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', backgroundColor: '#F8F0FF' }}>
-                              {area.area_name}
+                          {sessions.map((sess, si) => (
+                            <th key={sess.session_id} colSpan={areas.length}
+                              style={{ padding: '6px 8px', textAlign: 'center', borderBottom: '1px solid #DDD', borderRight: '2px solid #DDD', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', backgroundColor: '#7B4F9B', color: '#fff' }}>
+                              {sess.exam_type}
+                              <span style={{ fontSize: 9, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>
+                                {sess.status === 'Open' ? '🟢' : sess.status === 'Closed' ? '🔒' : '⏳'}
+                              </span>
                             </th>
                           ))}
                           <th rowSpan={2} style={{ padding: '8px 8px', textAlign: 'center', borderBottom: '2px solid #DDD', color: '#555', fontWeight: 700, whiteSpace: 'nowrap', backgroundColor: '#F8F0FF', verticalAlign: 'bottom', minWidth: 60 }}>
                             Overall
                           </th>
                         </tr>
-                        {/* Row 2: Session sub-headers */}
+                        {/* Row 2: Area sub-headers repeated under each session */}
                         <tr style={{ backgroundColor: '#FAFAFA' }}>
-                          {areas.map(area => (
-                            sessions.map((sess, si) => (
-                              <th key={`${area.area_id}-${sess.session_id}`}
+                          {sessions.map(sess => (
+                            areas.map((area, ai) => (
+                              <th key={`${sess.session_id}-${area.area_id}`}
                                 style={{
-                                  padding: '5px 6px', textAlign: 'center', fontSize: 10, fontWeight: 600,
+                                  padding: '4px 6px', textAlign: 'center', fontSize: 10, fontWeight: 600,
                                   borderBottom: '2px solid #DDD',
-                                  borderRight: si === sessions.length - 1 ? '2px solid #DDD' : '1px solid #EEE',
-                                  color: sess.status === 'Closed' ? '#333' : sess.status === 'Open' ? '#2E7D32' : '#AAA',
-                                  whiteSpace: 'nowrap', minWidth: 64,
+                                  borderRight: ai === areas.length - 1 ? '2px solid #DDD' : '1px solid #EEE',
+                                  color: '#7B4F9B', whiteSpace: 'nowrap', minWidth: 48,
                                 }}>
-                                {sess.exam_type}
-                                <div style={{ fontSize: 9, fontWeight: 400, color: '#AAA' }}>
-                                  {sess.status === 'Open' ? '🟢' : sess.status === 'Closed' ? '🔒' : '⏳'} {sess.status}
-                                </div>
+                                {area.area_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4)}
                               </th>
                             ))
                           ))}
@@ -504,12 +512,12 @@ export default function ClassReportPage() {
                             <td style={{ padding: '7px 12px', fontWeight: 600, color: '#333', borderRight: '1px solid #EEE', whiteSpace: 'nowrap' }}>
                               {st.full_name}
                             </td>
-                            {areas.map(area => (
-                              sessions.map((sess, si) => {
+                            {sessions.map(sess => (
+                              areas.map((area, ai) => {
                                 const cell = st.sessions?.[sess.session_id]?.[area.area_id];
                                 return (
-                                  <td key={`${area.area_id}-${sess.session_id}`}
-                                    style={{ padding: '5px 4px', textAlign: 'center', borderRight: si === sessions.length - 1 ? '2px solid #DDD' : '1px solid #F0F0F0' }}>
+                                  <td key={`${sess.session_id}-${area.area_id}`}
+                                    style={{ padding: '5px 4px', textAlign: 'center', borderRight: ai === areas.length - 1 ? '2px solid #DDD' : '1px solid #F0F0F0' }}>
                                     <LevelBadge level={cell?.level} />
                                   </td>
                                 );
