@@ -55,11 +55,10 @@ export default function ExamsPage() {
       .catch(() => {});
   }, [schoolId, classId, term, year]);
 
+  // Fetch learning areas only when a class is selected — each class has different subjects by grade
   useEffect(() => {
-    if (!schoolId) return;
-    console.log('[DEBUG ExamsPage] Fetching learning areas', { schoolId, classId });
+    if (!schoolId || !classId) { setAreas([]); return; }
     getLearningAreasWithSubAreas(schoolId, classId).then(d => {
-      console.log('[DEBUG ExamsPage] Response:', { subAreasCount: d.sub_areas?.length, areas: d.sub_areas });
       const subAreas = d.sub_areas || [];
       const areaMap = {};
       subAreas.forEach(sa => {
@@ -71,9 +70,7 @@ export default function ExamsPage() {
         });
       });
       setAreas(Object.values(areaMap).sort((a, b) => a.area_name?.localeCompare(b.area_name)));
-    }).catch(err => {
-      console.error('[DEBUG ExamsPage] Error:', err);
-    });
+    }).catch(() => {});
   }, [schoolId, classId]);
 
   useEffect(() => {
