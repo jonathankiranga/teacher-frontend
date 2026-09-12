@@ -49,15 +49,11 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
-  // Class dropdown — auto-select first class so there is never an "all" view
+  // Class dropdown — teacher picks manually, preference saved in localStorage
   useEffect(() => {
     if (!schoolId) { setClasses([]); return; }
     getSchoolClasses(schoolId).then(list => {
       setClasses(list);
-      // Auto-select the first class if nothing is selected yet
-      if (list.length > 0 && !classId) {
-        setClassId(String(list[0].class_id));
-      }
     }).catch(() => setClasses([]));
   }, [schoolId]);
 
