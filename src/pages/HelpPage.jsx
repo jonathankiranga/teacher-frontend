@@ -61,6 +61,7 @@ export default function HelpPage() {
             <p>• Works offline — data syncs when internet is available</p>
             <p>• OTPs sent via WhatsApp — keep your number registered</p>
             <p>• Kenyan terms: Term 1 (Jan-Apr), Term 2 (May-Aug), Term 3 (Sep-Nov)</p>
+            <p>• Strands &amp; sub-strands follow the KICD curriculum — they are pre-set for your school in managing sessions, so you only enter scores</p>
             <p>• The app is free for schools. Parents can subscribe to premium WhatsApp alerts</p>
           </div>
         </div>

@@ -6,7 +6,7 @@ const tabs = [
   { id: 'attendance', label: 'Attendance', icon: '📋', route: '/teacher/attendance' },
   { id: 'exams', label: 'Assessments', icon: '📝', route: '/exams' },
   { id: 'reports', label: 'Class Report', icon: '📊', route: '/class-report' },
-  { id: 'more', label: 'More', icon: '☰', route: '/home' },
+  { id: 'help', label: 'Help', icon: '❓', route: '/help' },
 ];
 
 export default function BottomNav() {
@@ -19,7 +19,7 @@ export default function BottomNav() {
     if (tab.id === 'attendance') return path.includes('/attendance');
     if (tab.id === 'exams') return path.includes('/exams');
     if (tab.id === 'reports') return path.includes('/class-report') || path.includes('/competency') || path.includes('/exams/report');
-    if (tab.id === 'more') return path === '/home' && !path.includes('/attendance') && !path.includes('/exams') && !path.includes('/class-report') && !path.includes('/competency');
+    if (tab.id === 'help') return path.includes('/help');
     return false;
   }
 
