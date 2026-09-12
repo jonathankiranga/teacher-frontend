@@ -49,11 +49,15 @@ export default function StudentList({ teacherId, schoolId, date }) {
 
   useEffect(() => { loadRoster(); }, [loadRoster]);
 
-  // Class dropdown for this school
+  // Class dropdown — auto-select first class so there is never an "all" view
   useEffect(() => {
     if (!schoolId) { setClasses([]); return; }
     getSchoolClasses(schoolId).then(list => {
       setClasses(list);
+      // Auto-select the first class if nothing is selected yet
+      if (list.length > 0 && !classId) {
+        setClassId(String(list[0].class_id));
+      }
     }).catch(() => setClasses([]));
   }, [schoolId]);
 
@@ -79,9 +83,10 @@ export default function StudentList({ teacherId, schoolId, date }) {
     downloadCSV(rows, `attendance-${date}.csv`);
   }
 
+  // Always filter by class — never show the full school roster
   const filteredStudents = classId
     ? students.filter(s => String(s.class_id) === String(classId))
-    : students;
+    : [];
 
   if (loading) {
     return (
@@ -119,10 +124,15 @@ export default function StudentList({ teacherId, schoolId, date }) {
     <div>
       <div className="card p-3 mb-3">
         <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-          <option value="">— Select class —</option>
           {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
         </select>
       </div>
+      {!classId ? (
+        <div className="card p-8 text-center">
+          <p className="text-sm" style={{ color: '#999' }}>Select a class to mark attendance.</p>
+        </div>
+      ) : (
+      <>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold" style={{ color: '#444' }}>
           {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
@@ -142,6 +152,8 @@ export default function StudentList({ teacherId, schoolId, date }) {
           />
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }
