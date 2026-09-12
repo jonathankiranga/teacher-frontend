@@ -1,7 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchStudents } from '../utils/api.js';
-import { getLearningAreas, getLearningAreasByClass, getStrands, getSubStrands, getLessonPlans, createLessonPlan, updateLessonPlan, deleteLessonPlan } from '../utils/api.js';
+import { getSchoolClasses, getLearningAreas, getLearningAreasByClass, getStrands, getSubStrands, getLessonPlans, createLessonPlan, updateLessonPlan, deleteLessonPlan } from '../utils/api.js';
 
 function toDateInput(value) {
   if (!value) return '';
@@ -36,22 +35,16 @@ function LessonPlanModal({ plan, schoolId, onClose, onSaved }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const teacherId = sessionStorage.getItem('teacher_id');
-    if (teacherId) {
-      console.log('[DEBUG LessonPlanModal] Fetching students for teacher:', teacherId);
-      fetchStudents(teacherId).then(data => {
-        console.log('[DEBUG LessonPlanModal] Response:', data);
-        const list = data.students || [];
-        const classMap = {};
-        list.forEach(s => { if (s.class_id) classMap[s.class_id] = s.class_name || 'Class'; });
-        const classesResult = Object.entries(classMap).map(([id, name]) => ({ value: id, label: name }));
-        console.log('[DEBUG LessonPlanModal] Classes:', classesResult);
-        setClasses(classesResult);
-      }).catch(err => {
-        console.error('[DEBUG LessonPlanModal] Error:', err);
-      });
-    }
-  }, []); // Run once on mount
+    if (!schoolId) { setClasses([]); return; }
+    console.log('[DEBUG LessonPlanModal] Fetching classes for school:', schoolId);
+    getSchoolClasses(schoolId).then(list => {
+      const classesResult = list.map(c => ({ value: c.class_id, label: c.class_name }));
+      console.log('[DEBUG LessonPlanModal] Classes:', classesResult);
+      setClasses(classesResult);
+    }).catch(err => {
+      console.error('[DEBUG LessonPlanModal] Error:', err);
+    });
+  }, [schoolId]); // Fetch classes when modal mounts or school changes
 
   // Fetch learning areas when classId changes
   useEffect(() => {
@@ -228,20 +221,16 @@ export default function LessonPlansPage() {
   }, [teacherId, navigate]);
 
   useEffect(() => {
-    if (!teacherId) return;
-    console.log('[DEBUG LessonPlans] Fetching students for teacher:', teacherId);
-    fetchStudents(teacherId).then(data => {
-      console.log('[DEBUG LessonPlans] Response:', data);
-      const list = data.students || [];
-      const classMap = {};
-      list.forEach(s => { if (s.class_id) classMap[s.class_id] = s.class_name || 'Class'; });
-      const classesResult = Object.entries(classMap).map(([id, name]) => ({ value: id, label: name }));
+    if (!schoolId) return;
+    console.log('[DEBUG LessonPlans] Fetching classes for school:', schoolId);
+    getSchoolClasses(schoolId).then(list => {
+      const classesResult = list.map(c => ({ value: c.class_id, label: c.class_name }));
       console.log('[DEBUG LessonPlans] Classes:', classesResult);
       setClasses(classesResult);
     }).catch(err => {
       console.error('[DEBUG LessonPlans] Error:', err);
     });
-  }, [teacherId]);
+  }, [schoolId]);
 
   async function loadPlans() {
     setLoading(true);
