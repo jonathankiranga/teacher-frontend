@@ -333,22 +333,27 @@ export default function ClassReportPage() {
           doc.text(`${code}=${label}`, lx + 4, y + 2.5);
           lx += 26;
         }
-        lx += 4;
+        // Area key on a new line below levels — full name to avoid ambiguity
+        const areaKeyY = y + 6;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(80, 80, 80);
-        doc.text('Areas:', lx, y + 2.5);
-        lx += 11;
+        doc.text('Subject Key:', ML, areaKeyY + 2.5);
+        let alx = ML + 22;
         for (let ai = 0; ai < areas.length; ai++) {
           const ac = AREA_PALETTE_PDF[ai % AREA_PALETTE_PDF.length];
+          const fullName = areas[ai].area_name;
+          // measure approximate text width at 6pt (approx 1.5mm per char)
+          const textW = fullName.length * 1.5 + 6;
+          // wrap to next line if overflow
+          if (alx + textW > PW - MR) { alx = ML + 22; }
           doc.setFillColor(ac.bg[0], ac.bg[1], ac.bg[2]);
-          doc.rect(lx, y, 3, 3, 'F');
+          doc.rect(alx, areaKeyY, 3, 3, 'F');
           doc.setDrawColor(ac.text[0], ac.text[1], ac.text[2]);
-          doc.rect(lx, y, 3, 3);
+          doc.rect(alx, areaKeyY, 3, 3);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(60, 60, 60);
-          doc.text(abbr(areas[ai].area_name), lx + 4, y + 2.5);
-          lx += 18;
-          if (lx > PW - MR - 20) break;
+          doc.text(fullName, alx + 4, areaKeyY + 2.5);
+          alx += textW + 4;
         }
         doc.setTextColor(0, 0, 0);
         doc.setDrawColor(0, 0, 0);
@@ -373,7 +378,7 @@ export default function ClassReportPage() {
       }
 
       const headerH = 9 + 7 + 6;
-      const legendH = 8;
+      const legendH = 14; // level key row + area key row
       const availableForRows = PH - MT - headerH - legendH - 8;
       const rowsPerPage = Math.floor(availableForRows / ROW_H);
 
