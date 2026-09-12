@@ -202,6 +202,7 @@ export async function getExamSessions(params) {
 export async function getLearningAreasWithSubAreas(schoolId, classId) {
   const params = { school_id: schoolId };
   if (classId) params.class_id = classId;
+  console.log('[DEBUG API] getLearningAreasWithSubAreas params:', params);
   const { data } = await api.get('/api/exam-sessions/sub-learning-areas', { params });
   return data;
 }
