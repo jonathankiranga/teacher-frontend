@@ -148,13 +148,13 @@ export default function ClassReportPage() {
       const cls      = report.class;
 
       // ── column geometry ──────────────────────────────────────────────────
-      const nameW   = 42;               // student name column
-      const overallW = 12;              // overall column
+      const nameW    = 42;   // student name column
+      const overallW = 10;   // overall column
       const totalDataCols = areas.length * sessions.length;
-      // remaining space divided equally among area×session cells
+      // colour-only cells — no text needed, so columns can be very narrow
       const cellW = totalDataCols > 0
-        ? Math.max(8, Math.floor((usableW - nameW - overallW) / totalDataCols))
-        : 12;
+        ? Math.max(6, Math.floor((usableW - nameW - overallW) / totalDataCols))
+        : 10;
 
       // ── colour helpers ───────────────────────────────────────────────────
       const LEVEL_RGB = {
@@ -284,32 +284,18 @@ export default function ClassReportPage() {
             const level = cell?.level;
             if (level) {
               setLevelFill(level);
-              doc.rect(cx + 0.5, y + 0.8, cellW - 1, ROW_H - 1.6, 'F');
-              const rgb = LEVEL_RGB[level] || [100, 100, 100];
-              doc.setTextColor(rgb[0], rgb[1], rgb[2]);
-              doc.setFont('helvetica', 'bold');
-              doc.setFontSize(6);
-              doc.text(level, cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
-            } else {
-              doc.setTextColor(180, 180, 180);
-              doc.setFont('helvetica', 'normal');
-              doc.setFontSize(6);
-              doc.text('—', cx + cellW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+              doc.rect(cx + 0.5, y + 0.5, cellW - 1, ROW_H - 1, 'F');
             }
+            // No text — colour alone conveys the level
             cx += cellW;
           }
         }
 
-        // Overall
+        // Overall — colour fill only, no text
         const overall = st.overall_level;
         if (overall) {
           setLevelFill(overall);
-          doc.rect(cx + 0.5, y + 0.8, overallW - 1, ROW_H - 1.6, 'F');
-          const rgb = LEVEL_RGB[overall] || [100, 100, 100];
-          doc.setTextColor(rgb[0], rgb[1], rgb[2]);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(6.5);
-          doc.text(overall, cx + overallW / 2, y + ROW_H / 2 + 1.8, { align: 'center' });
+          doc.rect(cx + 0.5, y + 0.5, overallW - 1, ROW_H - 1, 'F');
         }
 
         // Row bottom border
