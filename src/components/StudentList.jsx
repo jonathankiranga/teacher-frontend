@@ -7,7 +7,7 @@ import { downloadCSV } from '../utils/csvExport.js';
 export default function StudentList({ teacherId, schoolId, date }) {
   const [students, setStudents] = useState([]);
   // Default to first class if available, instead of 'all'
-  const [classId, setClassId] = useState('');
+  const [classId, setClassId] = useState(() => localStorage.getItem('preferred_class_id') || '');
   const [classes, setClasses] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -69,6 +69,11 @@ export default function StudentList({ teacherId, schoolId, date }) {
     });
   }, [date, teacherId]);
 
+  function handleClassChange(id) {
+    setClassId(id);
+    if (id) localStorage.setItem('preferred_class_id', id);
+  }
+
   function handleStatusChange(studentId, status) {
     setStatusMap(prev => ({ ...prev, [studentId]: status }));
   }
@@ -123,36 +128,38 @@ export default function StudentList({ teacherId, schoolId, date }) {
   return (
     <div>
       <div className="card p-3 mb-3">
-        <select value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
+        <select value={classId} onChange={e => handleClassChange(e.target.value)} className="input-field">
+          <option value="" disabled>Select a class...</option>
           {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
         </select>
       </div>
       {!classId ? (
         <div className="card p-8 text-center">
-          <p className="text-sm" style={{ color: '#999' }}>Select a class to mark attendance.</p>
+          <p className="text-sm font-semibold" style={{ color: '#555' }}>Select a class above to mark attendance</p>
+          <p className="text-xs mt-1" style={{ color: '#aaa' }}>Your selection will be remembered next time</p>
         </div>
       ) : (
-      <>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold" style={{ color: '#444' }}>
-          {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
-          {selectedClassName ? <span style={{ fontWeight: 400, color: '#888' }}> · {selectedClassName}</span> : ''}
-        </p>
-        <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
-      </div>
-      <div className="space-y-2">
-        {filteredStudents.map(s => (
-          <StudentCard
-            key={s.student_id}
-            student={s}
-            date={date}
-            teacherId={teacherId}
-            initialStatus={statusMap[s.student_id] || null}
-            onStatusChange={handleStatusChange}
-          />
-        ))}
-      </div>
-      </>
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold" style={{ color: '#444' }}>
+              {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}
+              {selectedClassName ? <span style={{ fontWeight: 400, color: '#888' }}> · {selectedClassName}</span> : ''}
+            </p>
+            <button onClick={handleExport} className="btn-secondary text-xs">Export CSV</button>
+          </div>
+          <div className="space-y-2">
+            {filteredStudents.map(s => (
+              <StudentCard
+                key={s.student_id}
+                student={s}
+                date={date}
+                teacherId={teacherId}
+                initialStatus={statusMap[s.student_id] || null}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
