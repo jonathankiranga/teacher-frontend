@@ -51,7 +51,7 @@ function LessonPlanModal({ plan, schoolId, onClose, onSaved }) {
         console.error('[DEBUG LessonPlanModal] Error:', err);
       });
     }
-  }, [schoolId]);
+  }, []); // Run once on mount
 
   // Fetch learning areas when classId changes
   useEffect(() => {
