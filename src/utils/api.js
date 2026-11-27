@@ -52,8 +52,8 @@ export async function waitForServer({ maxWaitMs = 90000, intervalMs = 3000, onWa
   return false; // timed out
 }
 
-export async function requestTeacherOtp(phone, email, role = 'teacher') {
-  const { data } = await api.post('/api/teachers/request-otp', { phone, email, role });
+export async function requestTeacherOtp(phone, email, role = 'teacher', school_id) {
+  const { data } = await api.post('/api/teachers/request-otp', { phone, email, role, school_id });
   return data;
 }
 
